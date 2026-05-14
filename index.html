@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Monitor Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3222/3222672.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase e Chart -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <div class="header-top">
+                <h1><i class="fas fa-solar-panel"></i> Solar Monitor</h1>
+                <div id="status-badge" class="badge">Iniciando...</div>
+            </div>
+            <span id="update-time">Buscando dados...</span>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="tab-bar">
+            <button class="tab-btn active" id="btn-dash" onclick="showTab('tab-dash')">
+                <i class="fas fa-home"></i> Painel
+            </button>
+            <button class="tab-btn" id="btn-forecast" onclick="showTab('tab-forecast')">
+                <i class="fas fa-file-invoice-dollar"></i> Previsão
+            </button>
+            <button class="tab-btn" id="btn-history" onclick="showTab('tab-history')">
+                <i class="fas fa-history"></i> Histórico
+            </button>
+        </nav>
+
+        <!-- ABA 1: PAINEL -->
+        <div id="tab-dash" class="tab-content active">
+            <div class="card main-flow">
+                <div class="flow-container">
+                    <div class="node solar">
+                        <div class="icon-circle"><i class="fas fa-sun"></i></div>
+                        <span class="label">Geração</span>
+                        <span class="value" id="val-production">0.00 <small>kWh</small></span>
+                        <span class="sub-value" id="val-watts">0 <small>W</small></span>
+                    </div>
+                    <div class="flow-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="node home">
+                        <div class="icon-circle"><i class="fas fa-home"></i></div>
+                        <span class="label">Consumo</span>
+                        <span class="value" id="val-consumption">0.00 <small>kWh</small></span>
+                    </div>
+                    <div class="flow-arrow"><i class="fas fa-exchange-alt"></i></div>
+                    <div class="node grid">
+                        <div class="icon-circle"><i class="fas fa-bolt"></i></div>
+                        <span class="label">Rede (Saldo)</span>
+                        <span class="value" id="val-grid">0.00 <small>kWh</small></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IDENTIFICAÇÃO DOS INVERSORES -->
+            <div class="card">
+                <h3><i class="fas fa-microchip"></i> Identificação dos Microinversores</h3>
+                <div id="inverter-details" class="inverter-list">
+                    <!-- Preenchido via script.js -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-chart-bar"></i> Geração vs Consumo</h3>
+                <div class="chart-container" style="position: relative; height:180px; width:100%">
+                    <canvas id="energyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-edit"></i> Leituras CPFL (Bauru)</h3>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>Tela 03 (Import)</label>
+                        <input type="number" id="import" step="0.01" placeholder="kWh">
+                        <small id="hint-import" class="hint"></small>
+                    </div>
+                    <div class="input-group">
+                        <label>Tela 103 (Export)</label>
+                        <input type="number" id="export" step="0.01" placeholder="kWh">
+                        <small id="hint-export" class="hint"></small>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-sync" onclick="syncData()">
+                    <i class="fas fa-cloud-upload-alt"></i> Sincronizar Agora
+                </button>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-history"></i> Histórico Recente</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Imp</th>
+                                <th>Exp</th>
+                                <th>Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: PREVISÃO -->
+        <div id="tab-forecast" class="tab-content">
+            <div class="card forecast-card">
+                <h2 style="color: var(--primary); margin-top: 0;">Balanço Mensal</h2>
+                <div class="stat-row">
+                    <span>Importado no Mês (kWh):</span>
+                    <span id="month-import" class="bold">0.00</span>
+                </div>
+                <div class="stat-row">
+                    <span>Exportado no Mês (kWh):</span>
+                    <span id="month-export" class="bold pos">0.00</span>
+                </div>
+                <hr>
+                <div class="stat-row">
+                    <span>Saldo Líquido (Consumo):</span>
+                    <span id="month-net" class="bold">0.00 kWh</span>
+                </div>
+                <div class="info-box-blue">
+                    <div class="stat-row small"><span>Taxa Mínima (Bifásico):</span><span>50 kWh</span></div>
+                    <div class="stat-row small"><span>CIP (Bauru):</span><span>R$ 9,07</span></div>
+                </div>
+                <div class="stat-row highlight">
+                    <span>Previsão de Fatura:</span>
+                    <span id="month-bill">R$ 0,00</span>
+                </div>
+                <div class="min-cost-info">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Custo Mínimo Fixo (CPFL): <b>R$ 54,07</b></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: HISTÓRICO ANTIGO -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h3><i class="fas fa-chart-line"></i> Evolução Anual (Estimada)</h3>
+                <div class="chart-container" style="position: relative; height:250px; width:100%">
+                    <canvas id="historyInvoicesChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Mês</th><th>Geração</th><th>Consumo</th><th>Custo</th></tr>
+                        </thead>
+                        <tbody id="history-invoices-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="stat-row">
+                <span>CPFL Bauru - Bifásico</span>
+                <span id="val-savings" class="pos bold">Economia Hoje: R$ 0,00</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "painel-solar-bauru"
+  },
+  "targets": {
+    "painel-solar-bauru": {
+      "hosting": {
+        "pwa-novo": [
+          "solariemma"
+        ]
+      }
+    }
+  }
+}
