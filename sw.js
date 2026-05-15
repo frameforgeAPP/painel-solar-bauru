@@ -1,4 +1,4 @@
-const CACHE_NAME = 'solar-monitor-v2';
+const CACHE_NAME = 'solar-monitor-v8';
 
 self.addEventListener('install', (e) => {
     self.skipWaiting();

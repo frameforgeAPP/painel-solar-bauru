@@ -28,19 +28,31 @@
                 </div>
                 <div id="status-badge" class="badge">Iniciando...</div>
             </div>
-            <span id="update-time" class="skeleton" style="display: inline-block; min-width: 120px;">Buscando dados...</span>
         </header>
 
-        <!-- Navegação -->
-        <nav class="tab-bar">
-            <button class="tab-btn active" id="btn-dash" onclick="showTab('tab-dash')">
-                <i class="fas fa-home"></i> Painel
-            </button>
-        </nav>
+        
 
         <!-- ABA 1: PAINEL -->
         <div id="tab-dash" class="tab-content active">
+
+            <!-- PREVISÃO DO TEMPO -->
+            <div class="card" style="padding: 8px 10px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span style="font-size: 0.75rem; font-weight: bold; color: var(--text-color);"><i class="fas fa-cloud-sun"></i> Previsão (Bauru)</span>
+                    <span id="update-time" class="skeleton" style="font-size: 0.6rem; color: var(--text-light);"><i class="fas fa-sync"></i> Buscando...</span>
+                </div>
+                <div id="weather-forecast" style="display: flex; justify-content: space-between; gap: 4px; overflow-x: auto;">
+                    <div class="skeleton" style="min-width: 45px; height: 50px; border-radius: 6px;"></div>
+                    <div class="skeleton" style="min-width: 45px; height: 50px; border-radius: 6px;"></div>
+                    <div class="skeleton" style="min-width: 45px; height: 50px; border-radius: 6px;"></div>
+                    <div class="skeleton" style="min-width: 45px; height: 50px; border-radius: 6px;"></div>
+                    <div class="skeleton" style="min-width: 45px; height: 50px; border-radius: 6px;"></div>
+                </div>
+            </div>
+
+            <!-- DIÁRIO -->
             <div class="card main-flow">
+                <h3 style="margin-top: 0; margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Diário</h3>
                 <div class="flow-container">
                     <div class="node solar">
                         <div class="icon-circle"><i class="fas fa-sun"></i></div>
@@ -65,14 +77,26 @@
                 </div>
             </div>
 
-            <!-- IDENTIFICAÇÃO DOS INVERSORES -->
+            <!-- TOTAIS HISTÓRICOS -->
             <div class="card">
-                <h3><i class="fas fa-microchip"></i> Identificação dos Microinversores</h3>
-                <div id="inverter-details" class="inverter-list">
-                    <!-- Preenchido via script.js -->
+                <h3><i class="fas fa-award"></i> Totais Desde a Instalação</h3>
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 0; gap: 5px;">
+                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                        <span class="label" style="color: #27ae60; font-size: 0.55rem;">Uso do Sol</span>
+                        <span class="value skeleton" id="val-total-uso" style="font-size: 0.85rem;">0 <small>kWh</small></span>
+                    </div>
+                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                        <span class="label" style="color: #d35400; font-size: 0.55rem;">Exportado</span>
+                        <span class="value skeleton" id="val-total-exp" style="font-size: 0.85rem;">0 <small>kWh</small></span>
+                    </div>
+                    <div class="node home" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                        <span class="label" style="color: #3498db; font-size: 0.55rem;">Compra CPFL</span>
+                        <span class="value skeleton" id="val-total-imp" style="font-size: 0.85rem;">0 <small>kWh</small></span>
+                    </div>
                 </div>
             </div>
 
+            <!-- GERAÇÃO VS CONSUMO -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin-bottom: 0;"><i class="fas fa-chart-area"></i> Geração vs Consumo</h3>
@@ -89,6 +113,15 @@
                 </div>
             </div>
 
+            <!-- IDENTIFICAÇÃO DOS INVERSORES -->
+            <div class="card">
+                <h3><i class="fas fa-microchip"></i> Identificação dos Microinversores</h3>
+                <div id="inverter-details" class="inverter-list">
+                    <!-- Preenchido via script.js -->
+                </div>
+            </div>
+
+            <!-- LEITURAS CPFL -->
             <div class="card">
                 <h3><i class="fas fa-edit"></i> Leituras CPFL (Bauru)</h3>
                 <div class="input-grid">
@@ -108,6 +141,7 @@
                 </button>
             </div>
 
+            <!-- HISTÓRICO RECENTE -->
             <div class="card">
                 <h3><i class="fas fa-history"></i> Histórico Recente</h3>
                 <div class="table-container">
@@ -125,9 +159,8 @@
                     </table>
                 </div>
             </div>
+            
         </div>
-
-
 
         <footer class="footer">
             <div class="stat-row">

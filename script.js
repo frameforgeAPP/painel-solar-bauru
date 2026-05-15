@@ -387,6 +387,22 @@ function renderChart() {
         }
     }
 
+    // Calcula Totais aproveitando exatamente os dados que vão para o gráfico (Geração vs Consumo)
+    const sumArr = arr => arr.reduce((a, b) => a + b, 0);
+    const sumUso = sumArr(autoValues);
+    const sumExp = sumArr(exportValues);
+    const sumImp = sumArr(compraValues);
+    
+    const formatTotal = (v) => v > 1000 ? (v/1000).toFixed(2) + ' <small>MWh</small>' : v.toFixed(0) + ' <small>kWh</small>';
+    
+    const usoEl = document.getElementById('val-total-uso');
+    const expEl = document.getElementById('val-total-exp');
+    const impEl = document.getElementById('val-total-imp');
+    
+    if (usoEl) usoEl.innerHTML = formatTotal(sumUso);
+    if (expEl) expEl.innerHTML = formatTotal(sumExp);
+    if (impEl) impEl.innerHTML = formatTotal(sumImp);
+
     if (energyChart) energyChart.destroy();
     if (energyChartLine) energyChartLine.destroy();
     
@@ -617,3 +633,61 @@ function renderInverters(list) {
             </div>`;
     }).join('');
 }
+
+
+async function fetchWeather() {
+    try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo');
+        const data = await res.json();
+        
+        const weatherCodes = {
+            0: { icon: "fa-sun", color: "#f1c40f" },
+            1: { icon: "fa-sun", color: "#f1c40f" },
+            2: { icon: "fa-cloud-sun", color: "#95a5a6" },
+            3: { icon: "fa-cloud", color: "#7f8c8d" },
+            45: { icon: "fa-smog", color: "#95a5a6" },
+            48: { icon: "fa-smog", color: "#95a5a6" },
+            51: { icon: "fa-cloud-rain", color: "#3498db" },
+            53: { icon: "fa-cloud-rain", color: "#3498db" },
+            55: { icon: "fa-cloud-rain", color: "#3498db" },
+            61: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            63: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            65: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            71: { icon: "fa-snowflake", color: "#ecf0f1" },
+            80: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            81: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            82: { icon: "fa-cloud-showers-heavy", color: "#2980b9" },
+            95: { icon: "fa-bolt", color: "#e74c3c" },
+            96: { icon: "fa-bolt", color: "#e74c3c" },
+            99: { icon: "fa-bolt", color: "#e74c3c" }
+        };
+
+        const container = document.getElementById('weather-forecast');
+        if (!container) return;
+        
+        let html = '';
+        for(let i=0; i<5; i++) {
+            const dateStr = data.daily.time[i];
+            const dateObj = new Date(dateStr + "T00:00:00");
+            const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
+            const maxT = Math.round(data.daily.temperature_2m_max[i]);
+            const minT = Math.round(data.daily.temperature_2m_min[i]);
+            const code = data.daily.weathercode[i];
+            const weather = weatherCodes[code] || { icon: "fa-cloud", color: "#95a5a6" };
+            
+            html += `
+                <div style="flex: 1; min-width: 45px; text-align: center; background: var(--bg); padding: 5px 0; border-radius: 6px; line-height: 1.1;">
+                    <div style="font-size: 0.6rem; font-weight: bold; text-transform: uppercase;">${dayName}</div>
+                    <i class="fas ${weather.icon}" style="font-size: 1.1rem; color: ${weather.color}; margin: 2px 0;"></i>
+                    <div style="font-size: 0.7rem; font-weight: bold;">${maxT}°</div>
+                    <div style="font-size: 0.55rem; color: var(--text-light);">${minT}°</div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        container.style.display = 'flex';
+    } catch(e) {
+        console.warn("Erro ao buscar previsao do tempo:", e);
+    }
+}
+setTimeout(fetchWeather, 500);
