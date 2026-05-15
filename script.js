@@ -23,35 +23,37 @@ const TARIFF = 0.90;
 const CIP = 9.07;
 const MIN_KWH = 50;
 
-// Dados Históricos Pré-Solar (Versão para copiar)
-const PRE_SOLAR_DATA = [
-    { mes: 'Mai/25', consumo: 452, custo: 406.80 },
-    { mes: 'Jun/25', consumo: 399, custo: 359.10 },
-    { mes: 'Jul/25', consumo: 338, custo: 304.20 },
-    { mes: 'Ago/25', consumo: 291, custo: 261.90 },
-    { mes: 'Set/25', consumo: 362, custo: 325.80 },
-    { mes: 'Out/25', consumo: 500, custo: 450.00 },
-    { mes: 'Nov/25', consumo: 431, custo: 387.90 },
-    { mes: 'Dez/25', consumo: 604, custo: 543.60 },
-    { mes: 'Jan/26', consumo: 714, custo: 642.60 },
-    { mes: 'Fev/26', consumo: 591, custo: 531.90 },
-    { mes: 'Mar/26', consumo: 690, custo: 621.00 },
-    { mes: 'Abr/26', consumo: 596, custo: 536.40 }
-];
+
 
 let state = {
     productionToday: 0,
     wattsNow: 0,
     history: [],
-    invDetails: DEVICES.map(d => ({ ...d, watts: 0, yield: 0, temp: '--', status: 'Conectando...' }))
+    groupedHistory: {},
+    invDetails: DEVICES.map(d => ({ ...d, watts: 0, yield: 0, temp: '--', status: 'Conectando...', dcPower: [] }))
 };
 let energyChart = null;
+let energyChartLine = null;
+
+function switchChartTab(tab) {
+    document.getElementById('tab-bar-btn').classList.remove('active');
+    document.getElementById('tab-line-btn').classList.remove('active');
+    document.getElementById('chart-bar-container').style.display = 'none';
+    document.getElementById('chart-line-container').style.display = 'none';
+
+    if (tab === 'bar') {
+        document.getElementById('tab-bar-btn').classList.add('active');
+        document.getElementById('chart-bar-container').style.display = 'block';
+    } else {
+        document.getElementById('tab-line-btn').classList.add('active');
+        document.getElementById('chart-line-container').style.display = 'block';
+    }
+}
 let historyChart = null;
 
 // 3. Inicialização
 window.onload = () => {
     renderInverters(state.invDetails);
-    renderPreSolar();
 
     document.getElementById('import').value = localStorage.getItem('lastImport') || '';
     document.getElementById('export').value = localStorage.getItem('lastExport') || '';
@@ -66,7 +68,6 @@ window.onload = () => {
     // Tenta renderizar os gráficos após um tempo para garantir carregamento dos canvas
     setTimeout(() => {
         renderChart();
-        renderPreSolar();
     }, 1500);
 
     setInterval(syncSolaxOnly, 120000);
@@ -90,12 +91,6 @@ function showTab(tabId) {
             else { renderChart(); }
         }, 200);
     }
-    if(tabId === 'tab-history') {
-        setTimeout(() => {
-            if(historyChart) { historyChart.resize(); historyChart.update(); }
-            else { renderPreSolar(); }
-        }, 200);
-    }
 }
 
 // 4. API Solax
@@ -103,7 +98,14 @@ async function syncSolaxOnly() {
     let totalYield = 0;
     let totalWatts = 0;
     const statusBadge = document.getElementById('status-badge');
-    const proxies = ['https://api.allorigins.win/get?url=', 'https://api.codetabs.com/v1/proxy?quest=', 'https://corsproxy.io/?'];
+    
+    // Lista expandida de proxies para maior chance de sucesso
+    const proxies = [
+        'https://api.allorigins.win/get?url=',
+        'https://corsproxy.io/?',
+        'https://thingproxy.freeboard.io/fetch/',
+        'https://api.codetabs.com/v1/proxy?quest='
+    ];
 
     statusBadge.innerText = "Sincronizando...";
 
@@ -114,37 +116,52 @@ async function syncSolaxOnly() {
         let success = false;
         for (const proxy of proxies) {
             try {
-                const response = await fetch(`${proxy}${encodeURIComponent(apiUrl)}`);
+                // Timeout curto de 5 segundos para cada tentativa de proxy
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const response = await fetch(`${proxy}${encodeURIComponent(apiUrl)}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if (!response.ok) continue;
                 const data = await response.json();
                 let res = data.contents ? JSON.parse(data.contents) : data;
 
                 if (res && res.success) {
                     const r = res.result;
-                    const watts = Number(r.acpower || r.acPower || r.power || 0);
+                    const watts = Number(r.acpower || r.acPower || 0);
                     const yDay = Number(r.yieldtoday || r.yieldToday || 0);
 
                     state.invDetails[i].watts = watts;
                     state.invDetails[i].yield = yDay;
                     state.invDetails[i].temp = r.inverterTemp || '--';
                     state.invDetails[i].status = getStatusText(r.inverterStatus);
+                    state.invDetails[i].dcPower = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4].filter(v => v !== null && v !== undefined);
 
                     totalYield += yDay;
                     totalWatts += watts;
                     success = true;
                     break;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn(`Falha no proxy ${proxy}:`, e.message);
+            }
         }
-        if (!success) state.invDetails[i].status = "Offline";
+        if (!success) state.invDetails[i].status = "Erro Sinc.";
     }
 
     state.productionToday = totalYield;
     state.wattsNow = totalWatts;
     updateDashboardUI();
     renderInverters(state.invDetails);
-    statusBadge.innerText = totalWatts > 0 ? "Gerando Agora" : "Conectado";
-    statusBadge.className = "badge online";
+    
+    if (totalWatts > 0 || totalYield > 0) {
+        statusBadge.innerText = totalWatts > 0 ? "Gerando Agora" : "Conectado";
+        statusBadge.className = "badge online";
+    } else {
+        statusBadge.innerText = "Sem Dados SolaX";
+        statusBadge.className = "badge offline";
+    }
 }
 
 // 5. Gravação
@@ -203,21 +220,42 @@ async function syncData() {
 
 // 6. Dados e UI
 function listenToCloudData() {
-    db.collection("leituras").orderBy("timestamp", "desc").limit(50).onSnapshot((snapshot) => {
-        let rawData = [];
-        snapshot.forEach(doc => rawData.push(doc.data()));
-        let filtered = [];
-        let seenDates = new Set();
-        rawData.forEach((item) => {
-            if (!seenDates.has(item.date)) {
-                filtered.push(item);
-                seenDates.add(item.date);
+    db.collection("leituras").orderBy("timestamp", "desc").limit(300).onSnapshot((snapshot) => {
+        let daySummaries = {};
+        let grouped = {};
+
+        snapshot.forEach(doc => {
+            const item = doc.data();
+            const date = item.date;
+
+            if (!grouped[date]) grouped[date] = [];
+            grouped[date].push(item);
+
+            if (!daySummaries[date]) {
+                daySummaries[date] = { ...item };
+            } else {
+                // Para o gráfico e histórico diário, queremos o MÁXIMO do dia
+                // (Já que geração, import e export são cumulativos no dia)
+                daySummaries[date].production = Math.max(daySummaries[date].production || 0, item.production || 0);
+                daySummaries[date].import = Math.max(daySummaries[date].import || 0, item.import || 0);
+                daySummaries[date].export = Math.max(daySummaries[date].export || 0, item.export || 0);
+                // Mantemos o timestamp mais recente para ordenação
+                if (item.timestamp && (!daySummaries[date].timestamp || item.timestamp.seconds > daySummaries[date].timestamp.seconds)) {
+                    daySummaries[date].timestamp = item.timestamp;
+                }
             }
         });
-        state.history = filtered;
+        
+        // Converte o objeto de resumos em array ordenado por data (timestamp)
+        state.history = Object.values(daySummaries).sort((a, b) => {
+            const tA = a.timestamp ? a.timestamp.seconds : 0;
+            const tB = b.timestamp ? b.timestamp.seconds : 0;
+            return tB - tA;
+        });
+
+        state.groupedHistory = grouped;
         renderHistory();
         updateDashboardUI();
-        calculateForecast();
     });
 }
 
@@ -263,109 +301,290 @@ function updateDashboardUI() {
     renderChart();
 }
 
-function calculateForecast() {
-    const mNetEl = document.getElementById('month-net');
-    if (state.history.length < 2) return;
-    const now = new Date();
-    const currentMonth = state.history.filter(h => h.timestamp && h.timestamp.toDate().getMonth() === now.getMonth());
-    if (currentMonth.length < 2) return;
-
-    const latest = currentMonth[0];
-    const first = currentMonth[currentMonth.length - 1];
-    const net = (latest.import - first.import) - (latest.export - first.export);
-
-    document.getElementById('month-import').innerText = (latest.import - first.import).toFixed(1);
-    document.getElementById('month-export').innerText = (latest.export - first.export).toFixed(1);
-    mNetEl.innerText = `${net.toFixed(1)} kWh`;
-    mNetEl.className = net <= 0 ? 'bold pos' : 'bold neg';
-
-    const day = now.getDate();
-    const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const projected = (net / day) * totalDays;
-    const bill = (Math.max(projected, MIN_KWH) * TARIFF) + CIP;
-    document.getElementById('month-bill').innerText = `R$ ${bill.toFixed(2).replace('.', ',')}`;
-}
-
 function renderChart() {
     const canvas = document.getElementById('energyChart');
     if (!canvas) return;
 
     let labels = [];
-    let prodValues = [];
-    let consValues = [];
+    let autoValues = [];     
+    let exportValues = [];   
+    let compraValues = [];
+    let geracaoTotalValues = [];
+    let consumoTotalValues = [];
     const todayStr = new Date().toLocaleDateString('pt-BR');
 
     if (state.history.length > 0) {
-        const last7 = [...state.history].slice(0, 7).reverse();
+        let last7 = [...state.history].slice(0, 7).reverse();
+        
+        // Remove explicitamente o dia 10 do gráfico conforme solicitado
+        last7 = last7.filter(h => !h.date.startsWith('10/'));
+        
         const lastRecord = state.history[0];
-
         labels = last7.map(h => h.date.split('/')[0]);
-        prodValues = last7.map(h => Number(h.production || 0));
-        consValues = last7.map(h => {
+        
+        last7.forEach(h => {
             const idx = state.history.findIndex(item => item.date === h.date);
             const prev = state.history[idx + 1];
-            if (!prev) return 0;
-            const dI = Number(h.import) - Number(prev.import);
-            const dE = Number(h.export) - Number(prev.export);
-            return Math.max(0, Number(h.production || 0) + dI - dE);
+            let dI = 0, dE = 0;
+            if (prev) {
+                dI = Math.max(0, Number(h.import) - Number(prev.import));
+                dE = Math.max(0, Number(h.export) - Number(prev.export));
+            }
+            let prod = Number(h.production || 0);
+            
+            if (h.date === todayStr) {
+                prod = Math.max(prod, state.productionToday);
+            }
+            
+            const auto = Math.max(0, prod - dE);
+            autoValues.push(auto);
+            exportValues.push(dE);
+            compraValues.push(dI);
+            geracaoTotalValues.push(prod);
+            consumoTotalValues.push(auto + dI);
         });
 
         if (lastRecord.date !== todayStr) {
+            labels.push('Hoje');
             const liveImp = parseFloat(document.getElementById('import').value) || lastRecord.import;
             const liveExp = parseFloat(document.getElementById('export').value) || lastRecord.export;
             const dI = Math.max(0, liveImp - lastRecord.import);
             const dE = Math.max(0, liveExp - lastRecord.export);
-
             let realProd = state.productionToday;
             if (realProd === lastRecord.production && state.wattsNow === 0) realProd = 0;
-
-            if (realProd > 0.01 || dI > 0 || dE > 0) {
-                labels.push('Hoje');
-                prodValues.push(realProd);
-                consValues.push(Math.max(0, realProd + dI - dE));
-            }
+            const auto = Math.max(0, realProd - dE);
+            autoValues.push(auto);
+            exportValues.push(dE);
+            compraValues.push(dI);
+            geracaoTotalValues.push(realProd);
+            consumoTotalValues.push(auto + dI);
         }
     }
 
     if (energyChart) energyChart.destroy();
+    if (energyChartLine) energyChartLine.destroy();
+    
     const ctx = canvas.getContext('2d');
+    const canvasLine = document.getElementById('energyChartLine');
+    const ctxLine = canvasLine ? canvasLine.getContext('2d') : null;
+    
+    const chartDataLabels = {
+        id: 'chartDataLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            chart.data.labels.forEach((label, index) => {
+                const auto = autoValues[index] || 0;
+                const dE = exportValues[index] || 0;
+                const dI = compraValues[index] || 0;
+                const prod = auto + dE;
+                
+                const metaGen = chart.getDatasetMeta(1).data[index];
+                const metaCompra = chart.getDatasetMeta(2).data[index];
+
+                if (prod > 0 && metaGen) {
+                    ctx.fillStyle = '#d35400';
+                    ctx.font = 'bold 9px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(prod.toFixed(1), metaGen.x, metaGen.y - 5);
+                }
+                if (dI > 0 && metaCompra) {
+                    ctx.fillStyle = '#1a5276';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(dI.toFixed(1), metaCompra.x, metaCompra.y - 5);
+                }
+            });
+        }
+    };
+
     energyChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ label: 'Geração', data: prodValues, backgroundColor: '#f1c40f', borderRadius: 4 }, { label: 'Consumo', data: consValues, backgroundColor: '#3498db', borderRadius: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { y: { beginAtZero: true }, x: { ticks: { font: { size: 9 } } } } }
+        data: { 
+            labels: labels, 
+            datasets: [
+                { label: 'Uso do Sol', data: autoValues, backgroundColor: '#27ae60', stack: 'Geração' },
+                { label: 'Exportado', data: exportValues, backgroundColor: '#f1c40f', stack: 'Geração', borderRadius: { topLeft: 4, topRight: 4 } },
+                { label: 'Compra CPFL', data: compraValues, backgroundColor: '#3498db', stack: 'Compra', borderRadius: { topLeft: 4, topRight: 4 } }
+            ] 
+        },
+        plugins: [chartDataLabels],
+        options: { 
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } }, 
+            scales: { y: { stacked: true, beginAtZero: true }, x: { stacked: true, ticks: { font: { size: 9 } } } } 
+        }
     });
+
+    if (ctxLine) {
+        energyChartLine = new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Geração Total',
+                        data: geracaoTotalValues,
+                        borderColor: '#e67e22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    },
+                    {
+                        label: 'Uso do Sol',
+                        data: autoValues,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    },
+                    {
+                        label: 'Exportado',
+                        data: exportValues,
+                        borderColor: '#f1c40f',
+                        backgroundColor: 'rgba(241, 196, 15, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    },
+                    {
+                        label: 'Consumo Total',
+                        data: consumoTotalValues,
+                        borderColor: '#2980b9',
+                        backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+                scales: { y: { beginAtZero: true }, x: { ticks: { font: { size: 9 } } } }
+            }
+        });
+    }
 }
 
 function renderHistory() {
     const tbody = document.getElementById('history-body');
     if (!tbody) return;
-    tbody.innerHTML = state.history.map(h => {
+    
+    let html = '';
+    state.history.forEach((h, index) => {
         const saldo = h.export - h.import;
-        return `<tr><td>${h.date}</td><td>${h.import}</td><td>${h.export}</td><td class="${saldo >= 0 ? 'pos' : 'neg'}">${saldo >= 0 ? '+' : ''}${saldo.toFixed(1)}</td></tr>`;
-    }).join('');
+        const time = h.timestamp ? h.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        const dayReadings = state.groupedHistory[h.date] || [];
+
+        html += `
+            <tr onclick="toggleDayDetails('${h.date}')" style="cursor: pointer; font-weight: bold">
+                <td>${h.date} <i class="fas fa-chevron-down" style="font-size: 0.6rem"></i></td>
+                <td>${time}</td>
+                <td>${h.import}</td>
+                <td>${h.export}</td>
+                <td class="${saldo >= 0 ? 'pos' : 'neg'}">${saldo >= 0 ? '+' : ''}${saldo.toFixed(1)}</td>
+            </tr>
+            <tr id="details-${h.date.replace(/\//g, '-')}" class="hidden-row">
+                <td colspan="5" style="padding: 0">
+                    <div class="details-container">
+                        <table class="inner-table">
+                            <thead>
+                                <tr><th>Hora</th><th>Imp</th><th>Exp</th><th>Saldo</th></tr>
+                            </thead>
+                            <tbody>
+                                ${dayReadings.map(r => {
+                                    const s = r.export - r.import;
+                                    const t = r.timestamp ? r.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                                    return `<tr><td>${t}</td><td>${r.import}</td><td>${r.export}</td><td class="${s >= 0 ? 'pos' : 'neg'}">${s >= 0 ? '+' : ''}${s.toFixed(1)}</td></tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
 }
 
-function renderPreSolar() {
-    const tbody = document.getElementById('history-invoices-body');
-    if (!tbody) return;
-    tbody.innerHTML = PRE_SOLAR_DATA.map(d => `<tr><td colspan="4" style="text-align: left; padding: 10px 15px; font-family: monospace; font-weight: bold; border-bottom: 1px solid #eee; background: #fff; font-size: 0.9rem; white-space: pre;">${d.mes} - ${d.consumo} kWh - R$ ${d.custo.toFixed(2).replace('.',',')}</td></tr>`).join('');
+function toggleDayDetails(date) {
+    const id = `details-${date.replace(/\//g, '-')}`;
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.toggle('visible-row');
+    }
+}
 
-    const canvas = document.getElementById('historyInvoicesChart');
-    if (!canvas) return;
-    if (historyChart) historyChart.destroy();
-    historyChart = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: { labels: PRE_SOLAR_DATA.map(d => d.mes), datasets: [{ label: 'Consumo (kWh)', data: PRE_SOLAR_DATA.map(d => d.consumo), borderColor: '#e74c3c', fill: true, backgroundColor: 'rgba(231, 76, 60, 0.1)', tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' } } }
-    });
+
+
+function getStatusText(code) {
+    const statusMap = {
+        100: "Aguardando",
+        101: "Autoteste",
+        102: "Normal",
+        103: "Falha Recup.",
+        104: "Falha Perm.",
+        105: "Atualizando",
+        106: "Detecção EPS",
+        107: "Off-grid",
+        108: "Autoteste (IT)",
+        109: "Modo Sleep",
+        110: "Standby",
+        111: "PV Wake-up",
+        112: "Detecção Gerador",
+        113: "Modo Gerador",
+        114: "Shutdown Rápido",
+        130: "Modo VPP",
+        131: "TOU-Self Use",
+        132: "TOU-Carga",
+        "100": "Aguardando", "101": "Auto Teste", "102": "Normal",
+        "103": "Falha Recup.", "104": "Falha Perm.", "105": "Atualizando",
+        "106": "EPS Detect", "107": "Off-grid", "108": "Self-Test",
+        "109": "Dormindo", "110": "Standby", "111": "Wake-up", "112": "Gen Detect",
+        "113": "Modo Gerador", "114": "Shutdown Rápido", "130": "Modo VPP",
+        "131": "TOU-Self Use", "132": "TOU-Carga", "133": "TOU-Descarga",
+        "141": "Normal (R-1)", "150": "Self Use", "151": "Force Time Use",
+        "152": "Back Up", "153": "Feedin Priority", "160": "OpenAdr"
+    };
+    
+    if (statusMap[code]) return statusMap[code];
+    
+    const numCode = Number(code);
+    const smallMap = { 0: "Offline", 1: "Normal", 2: "Falha", 3: "Verificando" };
+    
+    if (smallMap[numCode]) return smallMap[numCode];
+    
+    return "Offline"; // Fallback para códigos como -1 ou outros não mapeados
 }
 
 function renderInverters(list) {
     const container = document.getElementById('inverter-details');
     if (!container) return;
-    container.innerHTML = list.map(inv => `<div class="inverter-item"><div><span class="inv-name">${inv.name}</span><br><small>${inv.status} | ${inv.temp}°C</small></div><div class="inv-stats">${inv.watts}W <br><small>${inv.yield.toFixed(2)} kWh</small></div></div>`).join('');
-}
-
-function getStatusText(code) {
-    return { 0: "Offline", 1: "Normal", 2: "Falha", 3: "Verificando" }[code] || "Offline";
+    container.innerHTML = list.map(inv => {
+        const dcStrings = inv.dcPower && inv.dcPower.length > 0 
+            ? `<br><small>Strings: ${inv.dcPower.map(p => p + 'W').join(' | ')}</small>`
+            : '';
+        return `
+            <div class="inverter-item">
+                <div>
+                    <span class="inv-name">${inv.name}</span><br>
+                    <small>${inv.status}</small>
+                    ${dcStrings}
+                </div>
+                <div class="inv-stats">
+                    ${inv.watts}W <br>
+                    <small>${inv.yield.toFixed(2)} kWh</small>
+                </div>
+            </div>`;
+    }).join('');
 }

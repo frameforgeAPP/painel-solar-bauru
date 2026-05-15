@@ -86,9 +86,7 @@ header h1 { margin: 0; font-size: 1.3rem; font-weight: 800; }
 .value { font-size: 1rem; font-weight: 800; }
 .sub-value { font-size: 0.7rem; color: var(--text-light); }
 
-/* Suggestions */
-.suggestion-card { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
-.suggestion-card p { margin: 0; font-size: 0.8rem; color: #856404; }
+
 
 /* Inputs */
 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -97,29 +95,10 @@ input { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10
 
 .btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-/* Forecast Specific Styles */
-.info-box-blue {
-    background: #eef7ff;
-    padding: 10px;
-    border-radius: 10px;
-    margin: 10px 0;
-}
 
-.min-cost-info {
-    background: #f8f9fa;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-}
 
 .bold { font-weight: 800; }
 .stat-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.9rem; }
-.stat-row.highlight { border-top: 2px solid #eee; margin-top: 10px; padding-top: 12px; font-weight: 800; font-size: 1.2rem; color: var(--success); }
 .pos { color: var(--success); }
 .neg { color: var(--grid); }
 
@@ -139,3 +118,75 @@ td { padding: 8px; border-bottom: 1px solid #f9f9f9; }
 
 .footer { text-align: center; padding: 15px; border-top: 1px solid #eee; margin-top: 10px; }
 .hidden { display: none; }
+
+/* Estilos para Expansão de Histórico */
+.hidden-row {
+    display: none;
+}
+
+.visible-row {
+    display: table-row !important;
+    background: #f8f9fa;
+}
+
+.details-container {
+    padding: 10px;
+    background: #fdfdfd;
+    border-left: 3px solid var(--accent);
+    margin: 5px 10px;
+    border-radius: 4px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.inner-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.inner-table th {
+    background: #f1f1f1;
+    color: #444;
+    padding: 4px 8px;
+}
+
+.inner-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.inner-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Estilos para as abas dos gráficos */
+.chart-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f1f3f5;
+    padding: 3px;
+    border-radius: 6px;
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    color: #666;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.tab-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-weight: bold;
+}
+.tab-btn i {
+    font-size: 0.85rem;
+}

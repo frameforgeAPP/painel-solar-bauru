@@ -30,12 +30,6 @@
             <button class="tab-btn active" id="btn-dash" onclick="showTab('tab-dash')">
                 <i class="fas fa-home"></i> Painel
             </button>
-            <button class="tab-btn" id="btn-forecast" onclick="showTab('tab-forecast')">
-                <i class="fas fa-file-invoice-dollar"></i> Previsão
-            </button>
-            <button class="tab-btn" id="btn-history" onclick="showTab('tab-history')">
-                <i class="fas fa-history"></i> Histórico
-            </button>
         </nav>
 
         <!-- ABA 1: PAINEL -->
@@ -72,9 +66,18 @@
             </div>
 
             <div class="card">
-                <h3><i class="fas fa-chart-bar"></i> Geração vs Consumo</h3>
-                <div class="chart-container" style="position: relative; height:180px; width:100%">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin-bottom: 0;"><i class="fas fa-chart-area"></i> Geração vs Consumo</h3>
+                    <div class="chart-tabs">
+                        <button id="tab-bar-btn" class="tab-btn active" onclick="switchChartTab('bar')"><i class="fas fa-chart-bar"></i> Barras</button>
+                        <button id="tab-line-btn" class="tab-btn" onclick="switchChartTab('line')"><i class="fas fa-chart-line"></i> Linhas</button>
+                    </div>
+                </div>
+                <div class="chart-container" id="chart-bar-container" style="position: relative; height:180px; width:100%">
                     <canvas id="energyChart"></canvas>
+                </div>
+                <div class="chart-container" id="chart-line-container" style="position: relative; height:180px; width:100%; display: none;">
+                    <canvas id="energyChartLine"></canvas>
                 </div>
             </div>
 
@@ -104,6 +107,7 @@
                         <thead>
                             <tr>
                                 <th>Data</th>
+                                <th>Hora</th>
                                 <th>Imp</th>
                                 <th>Exp</th>
                                 <th>Saldo</th>
@@ -115,57 +119,7 @@
             </div>
         </div>
 
-        <!-- ABA 2: PREVISÃO -->
-        <div id="tab-forecast" class="tab-content">
-            <div class="card forecast-card">
-                <h2 style="color: var(--primary); margin-top: 0;">Balanço Mensal</h2>
-                <div class="stat-row">
-                    <span>Importado no Mês (kWh):</span>
-                    <span id="month-import" class="bold">0.00</span>
-                </div>
-                <div class="stat-row">
-                    <span>Exportado no Mês (kWh):</span>
-                    <span id="month-export" class="bold pos">0.00</span>
-                </div>
-                <hr>
-                <div class="stat-row">
-                    <span>Saldo Líquido (Consumo):</span>
-                    <span id="month-net" class="bold">0.00 kWh</span>
-                </div>
-                <div class="info-box-blue">
-                    <div class="stat-row small"><span>Taxa Mínima (Bifásico):</span><span>50 kWh</span></div>
-                    <div class="stat-row small"><span>CIP (Bauru):</span><span>R$ 9,07</span></div>
-                </div>
-                <div class="stat-row highlight">
-                    <span>Previsão de Fatura:</span>
-                    <span id="month-bill">R$ 0,00</span>
-                </div>
-                <div class="min-cost-info">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>Custo Mínimo Fixo (CPFL): <b>R$ 54,07</b></span>
-                </div>
-            </div>
-        </div>
 
-        <!-- ABA 3: HISTÓRICO ANTIGO -->
-        <div id="tab-history" class="tab-content">
-            <div class="card">
-                <h3><i class="fas fa-chart-line"></i> Evolução Anual (Estimada)</h3>
-                <div class="chart-container" style="position: relative; height:250px; width:100%">
-                    <canvas id="historyInvoicesChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Mês</th><th>Geração</th><th>Consumo</th><th>Custo</th></tr>
-                        </thead>
-                        <tbody id="history-invoices-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <footer class="footer">
             <div class="stat-row">

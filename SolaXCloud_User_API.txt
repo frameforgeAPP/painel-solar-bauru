@@ -1,0 +1,248 @@
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+SolaXCloud User API
+V2.0
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+Version Information
+Version Editor Time Remark
+V1.0 Rui Li 2023-11-30 Creating
+V1.1 Yongtao(Matt) Pan 2024-02-20 Layout organization, put into use
+V1.2 Yongtao(Matt) Pan 2024-07-20 Update data distribution
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+Contents
+1. Introduction ................................................................................................................................... 1
+2. Application Scope ........................................................................................................................ 1
+3. Operating Procedures .................................................................................................................1
+4. HTTP Request Paradigm ........................................................................................................... 1
+4.1. Interface Format and Protocol ....................................................................................... 1
+5. Common Parameter ....................................................................................................................2
+5.1. TokenId ............................................................................................................................... 2
+5.2. Common Return Object .................................................................................................. 2
+6. API Permission .............................................................................................................................3
+7. Active Query of Device Data ......................................................................................................3
+7.1. Query Real-time Data ......................................................................................................3
+8. Appendix ........................................................................................................................................6
+8.1. Device Status Mapping ................................................................................................... 6
+8.2. Error Code ......................................................................................................................... 7
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+1
+1. Introduction
+The SolaX API provides remote capability calls for third-party. The third-party sends
+HTTPS/HTTP GET or POST requests to the API server to query, modify and remotely
+control SolaX platform data.
+The third party needs to add corresponding parameters in the request message according
+to the API instructions to call the API. SolaX platform will return the processing results
+based on the processing of the request.
+2. Application Scope
+This document is applicable to the SolaX Cloud platform and the inverters of SolaX.
+3. Operating Procedures
+1. Log in https://www.solaxcloud.com/user-center/ to register an account.
+2. Obtain the unique tokenId through the menu [service-API].
+3. Call the API according to the [SolaXCloud-API Interface] document.
+4. HTTP Request Paradigm
+4.1. Interface Format and Protocol
+The API operate the platform data through Https protocol, and return the results in JSON
+format.
+Interface address:
+https://<URL>/api/<API_VERSION>/<RESOURCE_NAME>/<RESOURCE_ACTION>
+Notice:
+(1) URL: access domain, the specific API address can be obtained according to the menu
+[service-API].
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+2
+(2) API_VERSION: version number, the current version number is v2.
+(3) RESOURCE_NAME: indicates the resource to be operated, such as userMng,
+distributorMng, siteMng, etc.
+(4) RESOURCE_ACTION: indicates the action on the resource, such as list, add, etc.
+5. Common Parameter
+5.1. TokenId
+Parameter Notes
+tokenId Get from [service-API]. Please keep the token safe and do not leak it.
+Notice:When calling the interface, tokenId needs to be placed in Headers.
+┃ When commissioning the interface, the interface testing tool [Postman] can be
+used to commission and place tokens in Headers.
+5.2. Common Return Object
+Name Type Description
+success Boolean true=successful, false=unsuccessful
+exception String Error message
+result Object Concrete data returned
+code Integer Concrete status code returned
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+3
+6. API Permission
+When users request an interface, they must use tokenId to submit an API request to
+SolaXCloud. The tokenId request path is [service-API].
+Log in to SolaXCloud, click [service], enter the API page, and obtain tokenId. After the
+request is successful, tokenId will be bound to the distributor/installer account.
+7. Active Query of Device Data
+7.1. Query Real-time Data
+The format of requested data
+Type Definition Must Description
+Partial URL /api/v2/dataAccess/realtimeInfo
+/get
+Content Type application/json
+HTTP Method POST
+Request Content wifiSn Yes Registration Number
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+4
+Example
+Request address
+https://<URL>/api/v2/dataAccess/realtimeInfo/get
+Request message
+{
+"wifiSn": "SUT****VB1"
+}
+Returned message
+{
+"success": true,
+"exception": "Query success!",
+"result": {
+"inverterSN": "H34******6008",
+"sn": "SR******RM",
+"acpower": 152,
+"yieldtoday": 0.2,
+"yieldtotal": 2420.5,
+"feedinpower": 0,
+"feedinenergy": 0,
+"consumeenergy": 0,
+"feedinpowerM2": null,
+"soc": null,
+"peps1": null,
+"peps2": null,
+"peps3": null,
+"inverterType": "4",
+"inverterStatus": "102",
+"uploadTime": "2024-08-20 09:21:43",
+"batPower": null,
+"powerdc1": 162,
+"powerdc2": 0,
+"powerdc3": null,
+"powerdc4": null,
+"batStatus": null,
+"utcDateTime": "2025-11-06T06:41:25Z"
+},
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+5
+"code": 0
+}
+Explanation of the return
+Name Type Description
+success Boolean ttrue=successful, false=unsuccessful
+exception String Error message
+result Object Concrete data returned
+inverterSN String Inverter SN
+sn String Wi-Fi module SN
+acpower Float AC output power
+yieldtoday Float Today’s yield
+yieldtotal Float Total yield
+feedinpower Float Power supplied to the grid
+feedinenergy Float Total grid export power
+consumeenergy Float Total grid import power
+feedinpowerM2 Float Meter 2 power
+soc Float Battery capacity
+peps1 Float EPS A phase active power
+peps2 Float EPS B phase active power
+peps3 Float EPS C phase active power
+inverterType String Inverter type
+inverterStatus String Inverter operating conditions, see Appendix 8.1.
+"Device status mapping" for values
+uploadTime String Upload time format 2016-10-26 17:33:01
+batPower Float Battery terminal power
+powerdc1 Float PV1 input power
+powerdc2 Float PV2 input power
+powerdc3 Float PV3 input power
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+6
+powerdc4 Float PV4 input power
+batStatus String Battery status: 0 normal, 1 fault, 2 disconnected
+utcDateTime String Data upload UTC time
+code Integer 0: Success, see Appendix 8.2. "Error Code"for other
+codes
+8. Appendix
+8.1. Device Status Mapping
+Inverter
+Code Status
+100 Waiting for operation
+101 Self-test
+102 Normal
+103 Recoverable fault
+104 Permanent fault
+105 Firmware upgrade
+106 EPS detection
+107 Off-grid
+108 Self-test mode (Italian safety regulations)
+109 Sleep mode
+110 Standby mode
+111 Photovoltaic wake-up battery mode
+112 Generator detection mode
+113 Generator mode
+114 Fast shutdown standby mode
+130 VPP mode
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+7
+131 TOU-Self use
+132 TOU-Charging
+133 TOU-Discharging
+134 TOU-Battery off
+135 TOU-Peak Shaving
+136 Normal generator operation mode
+137 Battery expansion mode
+138 On-grid battery heating mode
+139 EPS battery heating mode
+141 NormalMode(R-1)
+142 NormalMode(R-2)
+143 NormalMode(R-3)
+144 NormalMode(R-4)
+145 NormalMode(R-5)
+146 NormalMode(R-6)
+147 NormalMode(R-7)
+148 NormalMode（SS）
+150 Self Use
+151 Force Time Use
+152 Back Up Mode
+153 Feedin Priority
+154 Demand Mode
+155 ConstPowr Mode
+160 OpenAdr Mode
+8.2. Error Code
+Error code Returned Message
+1001 Interface Unauthorized
+
+==================================================
+
+SolaX Power Network Technology (Zhe jiang) Co. , Ltd.
+8
+1002 Parameter validation failed
+1003 Data Unauthorized
+1004 Duplicate data
+2001 Operation failed
+2002 Data not found
+
+==================================================
+
