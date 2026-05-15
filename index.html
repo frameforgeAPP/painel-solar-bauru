@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#2c3e50">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3222/3222672.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Firebase e Chart -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -19,10 +20,15 @@
     <div class="dashboard">
         <header>
             <div class="header-top">
-                <h1><i class="fas fa-solar-panel"></i> Solar Monitor</h1>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h1><i class="fas fa-solar-panel"></i> Solar Monitor</h1>
+                    <button id="theme-toggle" onclick="toggleTheme()" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; padding: 0; outline: none;">
+                        <i id="theme-icon" class="fas fa-moon"></i>
+                    </button>
+                </div>
                 <div id="status-badge" class="badge">Iniciando...</div>
             </div>
-            <span id="update-time">Buscando dados...</span>
+            <span id="update-time" class="skeleton" style="display: inline-block; min-width: 120px;">Buscando dados...</span>
         </header>
 
         <!-- Navegação -->
@@ -39,20 +45,22 @@
                     <div class="node solar">
                         <div class="icon-circle"><i class="fas fa-sun"></i></div>
                         <span class="label">Geração</span>
-                        <span class="value" id="val-production">0.00 <small>kWh</small></span>
-                        <span class="sub-value" id="val-watts">0 <small>W</small></span>
+                        <span class="value skeleton" id="val-production">0.00 <small>kWh</small></span>
+                        <span class="sub-value skeleton" id="val-watts">0 <small>W</small></span>
                     </div>
                     <div class="flow-arrow"><i class="fas fa-chevron-right"></i></div>
                     <div class="node home">
                         <div class="icon-circle"><i class="fas fa-home"></i></div>
                         <span class="label">Consumo</span>
-                        <span class="value" id="val-consumption">0.00 <small>kWh</small></span>
+                        <span class="value skeleton" id="val-consumption">0.00 <small>kWh</small></span>
+                        <span class="sub-value">&nbsp;</span>
                     </div>
                     <div class="flow-arrow"><i class="fas fa-exchange-alt"></i></div>
                     <div class="node grid">
                         <div class="icon-circle"><i class="fas fa-bolt"></i></div>
                         <span class="label">Rede (Saldo)</span>
-                        <span class="value" id="val-grid">0.00 <small>kWh</small></span>
+                        <span class="value skeleton" id="val-grid">0.0 <small>kWh</small></span>
+                        <span class="sub-value">&nbsp;</span>
                     </div>
                 </div>
             </div>
@@ -124,7 +132,7 @@
         <footer class="footer">
             <div class="stat-row">
                 <span>CPFL Bauru - Bifásico</span>
-                <span id="val-savings" class="pos bold">Economia Hoje: R$ 0,00</span>
+                <span id="val-savings" class="pos bold skeleton" style="min-width: 150px;">Economia Hoje: R$ 0,00</span>
             </div>
         </footer>
     </div>

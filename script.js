@@ -35,6 +35,30 @@ let state = {
 let energyChart = null;
 let energyChartLine = null;
 
+// ==========================================
+// TEMA (MODO ESCURO / CLARO)
+// ==========================================
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    const icon = document.getElementById('theme-icon');
+    if (isDark) {
+        icon.className = 'fas fa-sun';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        icon.className = 'fas fa-moon';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        const icon = document.getElementById('theme-icon');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+});
+
+
 function switchChartTab(tab) {
     document.getElementById('tab-bar-btn').classList.remove('active');
     document.getElementById('tab-line-btn').classList.remove('active');
@@ -135,7 +159,7 @@ async function syncSolaxOnly() {
                     state.invDetails[i].watts = watts;
                     state.invDetails[i].yield = yDay;
                     state.invDetails[i].temp = r.inverterTemp || '--';
-                    state.invDetails[i].status = getStatusText(r.inverterStatus);
+                    state.invDetails[i].status = getStatusText(r.inverterStatus, watts);
                     state.invDetails[i].dcPower = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4].filter(v => v !== null && v !== undefined);
 
                     totalYield += yDay;
@@ -260,6 +284,8 @@ function listenToCloudData() {
 }
 
 function updateDashboardUI() {
+    // Remove as animações de carregamento (skeletons)
+    document.querySelectorAll('.skeleton').forEach(el => el.classList.remove('skeleton'));
     const prod = Number(state.productionToday || 0);
     document.getElementById('val-production').innerHTML = `${prod.toFixed(2)} <small>kWh</small>`;
     document.getElementById('val-watts').innerHTML = `${state.wattsNow || 0} <small>W</small>`;
@@ -527,7 +553,7 @@ function toggleDayDetails(date) {
 
 
 
-function getStatusText(code) {
+function getStatusText(code, watts = 0) {
     const statusMap = {
         100: "Aguardando",
         101: "Autoteste",
@@ -560,11 +586,14 @@ function getStatusText(code) {
     if (statusMap[code]) return statusMap[code];
     
     const numCode = Number(code);
-    const smallMap = { 0: "Offline", 1: "Normal", 2: "Falha", 3: "Verificando" };
     
+    // Se está gerando energia, independentemente do código, está operando
+    if (watts > 0) return "Gerando";
+    
+    const smallMap = { 0: "Aguardando", 1: "Normal", 2: "Falha", 3: "Verificando" };
     if (smallMap[numCode]) return smallMap[numCode];
     
-    return "Offline"; // Fallback para códigos como -1 ou outros não mapeados
+    return "Aguardando"; // Em vez de assumir offline, assumimos aguardando se watts == 0
 }
 
 function renderInverters(list) {
