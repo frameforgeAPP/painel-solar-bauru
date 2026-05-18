@@ -991,10 +991,10 @@ function saveSettings() {
 
 // ==========================================
 // PREVISÃO DA FATURA CPFL — automático
-// Sistema instalado 11/05/2026 → Fio B 30% aplicável
+// Sistema instalado 11/05/2026 → Fio B 60% aplicável (Regra de Transição 2026)
 // ==========================================
 const BILL_CYCLE_START = '2026-05-12';
-const FIOB_RATE = 0.051;
+const FIOB_RATE = 0.102; // 60% do Fio B da CPFL Paulista (Fio B integral ~ R$ 0,17/kWh)
 
 function toggleBillDetails() {
     const details  = document.getElementById('bill-details');
@@ -1111,7 +1111,7 @@ function calcBillEstimate() {
     }
 
     const bdEl = document.getElementById('bill-breakdown');
-    if (bdEl) bdEl.innerHTML = `<i class="fas fa-plug" style="color:#9b59b6;"></i> Fio B incluído · Lei 14.300/2022 · 30% · sistema pós-jan/2023`;
+    if (bdEl) bdEl.innerHTML = `<i class="fas fa-plug" style="color:#9b59b6;"></i> Fio B incluído · Lei 14.300/2022 · 60% em 2026 · sistema pós-jan/2023`;
 
     // Detalhes
     const elImp  = document.getElementById('bill-import-delta');
