@@ -392,8 +392,7 @@ function updateDashboardUI() {
 
     const savings = prod * TARIFF;
     const savingsEl = document.getElementById('val-savings');
-    if(savingsEl) savingsEl.textContent = `Hoje: R$ ${savings.toFixed(2).replace('.', ',')}${
-        savings > 0 ? '' : ''}` ;
+    if(savingsEl) savingsEl.textContent = `R$ ${savings.toFixed(2).replace('.', ',')}`;
 
     // Item 5: Economia acumulada do mês corrente + média diária
     const now = new Date();
@@ -425,7 +424,7 @@ function updateDashboardUI() {
     }
 
     const savingsMonthEl = document.getElementById('val-savings-month');
-    if (savingsMonthEl) savingsMonthEl.textContent = `Mês: R$ ${monthlySavings.toFixed(2).replace('.', ',')}`;
+    if (savingsMonthEl) savingsMonthEl.textContent = `R$ ${monthlySavings.toFixed(2).replace('.', ',')}`;
 
     // Média diária de geração do mês
     const avgDay = daysWithData > 0 ? monthlyProduction / daysWithData : 0;
@@ -1089,6 +1088,31 @@ function calcBillEstimate() {
     // Total em destaque
     const totalEl = document.getElementById('bill-total');
     if (totalEl) { totalEl.textContent = `R$ ${fmt(totalBill)}`; totalEl.classList.remove('skeleton'); }
+
+    // CÁLCULO DA ESTIMATIVA SEM SOLAR (quanto gastaria se não tivesse energia solar)
+    let cycleProd = 0;
+    sorted.forEach(h => {
+        const ms = dateToMs(h.date);
+        if (ms > cycleStartMs && ms <= dateToMs(latestRecord.date)) {
+            if (h.date === '10/05/2026') return; // ignora baseline
+            cycleProd += Number(h.production) || 0;
+        }
+    });
+    // Se o último registro não for hoje, soma também o hoje em tempo real (state.productionToday)
+    const todayStr3 = new Date().toLocaleDateString('pt-BR');
+    if (latestRecord.date !== todayStr3) {
+        cycleProd += Number(state.productionToday || 0);
+    }
+
+    const consCycleNoSolar = Math.max(0, cycleProd - dExp) + dImp;
+    const consProjNoSolar  = (consCycleNoSolar / daysElapsed) * daysTotal;
+    const billProjNoSolar  = Math.max(consProjNoSolar, MIN_KWH) * TARIFF + CIP;
+
+    const noSolarEl = document.getElementById('val-nosolar-month');
+    if (noSolarEl) {
+        noSolarEl.textContent = `R$ ${fmt(billProjNoSolar)}`;
+        noSolarEl.classList.remove('skeleton');
+    }
 
     // Composição linha a linha
     const lineEl = document.getElementById('bill-line-items');

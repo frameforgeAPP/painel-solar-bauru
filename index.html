@@ -310,14 +310,24 @@
 
             <!-- ECONOMIA SOLAR -->
             <div class="card" id="savings-card" style="margin-top: 12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h3 style="margin:0 0 2px 0"><i class="fas fa-hand-holding-usd" style="color:#27ae60;"></i> Economia Solar</h3>
-                        <div style="font-size:0.68rem; color:var(--text-light);">CPFL Bauru - Bifásico</div>
+                <h3 style="margin:0 0 4px 0 !important;"><i class="fas fa-hand-holding-usd" style="color:#27ae60;"></i> Economia & Retorno Solar</h3>
+                <div style="font-size:0.68rem; color:var(--text-light); margin-bottom: 12px; border-bottom: 1px solid var(--bg); padding-bottom: 8px;">CPFL Bauru - Bifásico</div>
+                
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Economia de Hoje -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
+                        <span style="color:var(--text-light);"><i class="fas fa-sun" style="color:var(--solar); margin-right:4px;"></i> Economia Gerada Hoje</span>
+                        <span id="val-savings" style="font-weight:bold; color:#27ae60;" class="skeleton">R$ 0,00</span>
                     </div>
-                    <div style="text-align:right;">
-                        <div id="val-savings" class="pos bold skeleton" style="font-size:1.15rem; font-weight:800; color:#27ae60; line-height:1.2;">Hoje: R$ 0,00</div>
-                        <div id="val-savings-month" style="font-size:0.8rem; color:var(--text-light); margin-top:2px;">Mês: R$ 0,00</div>
+                    <!-- Economia do Mês -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
+                        <span style="color:var(--text-light);"><i class="fas fa-calendar-alt" style="color:#3498db; margin-right:4px;"></i> Economia Acumulada no Mês</span>
+                        <span id="val-savings-month" style="font-weight:bold; color:#27ae60;" class="skeleton">R$ 0,00</span>
+                    </div>
+                    <!-- Estimativa Sem Solar -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; border-top:1px dashed var(--bg); padding-top:8px; margin-top:2px;">
+                        <span style="color:var(--text-light);"><i class="fas fa-bolt" style="color:#e74c3c; margin-right:4px;"></i> Se não tivesse Energia Solar</span>
+                        <span id="val-nosolar-month" style="font-weight:bold; color:#e74c3c;" class="skeleton">R$ 0,00</span>
                     </div>
                 </div>
             </div>
