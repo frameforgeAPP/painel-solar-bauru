@@ -614,4 +614,19 @@ body.dark-mode .cpfl-quick-btn:hover {
 body.dark-mode .cpfl-quick-btn.reset:hover {
     background: rgba(230,126,34,0.15);
 }
+
+/* Premium Collapsible Invoice Card (Previsão da Fatura) */
+.bill-card {
+    border-left: 4px solid #e74c3c !important;
+    background: linear-gradient(to right, rgba(231,76,60,0.01), var(--card-bg)) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+.bill-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06) !important;
+    border-left-color: #c0392b !important;
+}
+body.dark-mode .bill-card {
+    background: linear-gradient(to right, rgba(231,76,60,0.03), var(--card-bg)) !important;
+}
 

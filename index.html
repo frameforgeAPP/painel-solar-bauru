@@ -279,19 +279,21 @@
             </div>
 
             <!-- PREVISAO DA FATURA CPFL -->
-            <div class="card" id="bill-card" style="cursor:pointer;" onclick="toggleBillDetails()">
+            <div class="card bill-card" id="bill-card" style="cursor:pointer;" onclick="toggleBillDetails()">
                 <!-- Cabeçalho sempre visível -->
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <h3 style="margin:0 0 2px 0"><i class="fas fa-file-invoice-dollar"></i> Previsão da Fatura</h3>
-                        <div id="bill-month-label" style="font-size:0.68rem; color:var(--text-light);"></div>
+                        <h3 style="margin:0 0 2px 0"><i class="fas fa-file-invoice-dollar" style="color:#e74c3c; margin-right:4px;"></i> Previsão da Fatura</h3>
+                        <div id="bill-month-label" style="font-size:0.68rem; color:var(--text-light); padding-left:22px;"></div>
                     </div>
-                    <div style="text-align:right; display:flex; align-items:center; gap:10px;">
-                        <div>
-                            <div id="bill-total" class="skeleton" style="font-size:1.15rem; font-weight:800; color:#e74c3c; line-height:1.2;">R$ --,--</div>
-                            <div style="font-size:0.6rem; color:var(--text-light); text-align:right;">estimativa</div>
+                    <div style="text-align:right; display:flex; align-items:center; gap:8px;">
+                        <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                            <div id="bill-total" class="skeleton" style="font-size:0.95rem; font-weight:800; color:#e74c3c; background:rgba(231,76,60,0.08); padding:4px 12px; border-radius:30px; border:1px solid rgba(231,76,60,0.12); display:inline-block; line-height:1.2; letter-spacing:0.2px;">
+                                R$ --,--
+                            </div>
+                            <div style="font-size:0.58rem; color:var(--text-light); margin-top:2px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding-right:6px;">estimativa</div>
                         </div>
-                        <i id="bill-chevron" class="fas fa-chevron-down" style="color:var(--text-light); font-size:0.85rem; transition:transform 0.3s;"></i>
+                        <i id="bill-chevron" class="fas fa-chevron-down" style="color:var(--text-light); font-size:0.8rem; transition:transform 0.3s; margin-left:2px;"></i>
                     </div>
                 </div>
 
