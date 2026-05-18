@@ -157,6 +157,98 @@ tbody tr[onclick]:hover {
 .footer { text-align: center; padding: 15px; border-top: 1px solid #eee; margin-top: 10px; }
 .hidden { display: none; }
 
+/* ========================================================================= */
+/* Power Gauge */
+/* ========================================================================= */
+.power-gauge-container {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 10px;
+}
+.power-gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.68rem;
+    color: var(--text-light);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.4px;
+}
+.power-gauge-percent {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--text);
+}
+.power-gauge-bar {
+    height: 6px;
+    background: #e0e6ed;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.power-gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease;
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+.power-gauge-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.62rem;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* ========================================================================= */
+/* Settings Card */
+/* ========================================================================= */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+.settings-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s ease;
+}
+.settings-body.open {
+    max-height: 1200px;
+}
+.btn-settings-toggle {
+    background: var(--bg);
+    border: 1px solid #e0e6ed;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+.btn-settings-toggle:hover {
+    background: #e0e6ed;
+    color: var(--text);
+}
+
+/* ========================================================================= */
+/* Monthly Savings Footer */
+/* ========================================================================= */
+#val-savings-month {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
 /* Estilos para Expansão de Histórico */
 .hidden-row {
     display: none;
@@ -225,7 +317,6 @@ tbody tr[onclick]:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     font-weight: bold;
 }
-}
 
 /* ========================================================================= */
 /* Skeleton Loaders */
@@ -292,6 +383,11 @@ body.dark-mode .tab-btn.active { background: #444; color: var(--primary); }
 body.dark-mode .inverter-item { background: #2a2a2a; }
 
 body.dark-mode .chart-tabs { background: #2a2a2a; }
+body.dark-mode .power-gauge-container { background: #2a2a2a; }
+body.dark-mode .power-gauge-bar { background: #444; }
+body.dark-mode .btn-settings-toggle { background: #2a2a2a; border-color: #444; }
+body.dark-mode .btn-settings-toggle:hover { background: #333; }
+body.dark-mode #val-savings-month { color: #888; }
 
 body.dark-mode input {
     background: #2a2a2a;
@@ -311,3 +407,199 @@ body.dark-mode .skeleton {
     background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
     background-size: 200% 100%;
 }
+
+/* ========================================================================= */
+/* Smart CPFL Card                                                            */
+/* ========================================================================= */
+.cpfl-card { padding: 16px 15px 14px; }
+
+.cpfl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.cpfl-status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ccc;
+    box-shadow: 0 0 0 3px rgba(204,204,204,0.2);
+    transition: background 0.4s, box-shadow 0.4s;
+}
+.cpfl-status-dot.valid   { background: #27ae60; box-shadow: 0 0 0 4px rgba(39,174,96,0.2); }
+.cpfl-status-dot.invalid { background: #e74c3c; box-shadow: 0 0 0 4px rgba(231,76,60,0.2); }
+.cpfl-status-dot.ready   { background: #3498db; box-shadow: 0 0 0 4px rgba(52,152,219,0.25); }
+
+.cpfl-meters {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.cpfl-meter-block {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+}
+.cpfl-meter-block.valid   { border-color: rgba(39,174,96,0.4); }
+.cpfl-meter-block.invalid { border-color: rgba(231,76,60,0.4); }
+.cpfl-meter-block.ready   { border-color: rgba(52,152,219,0.4); }
+
+.cpfl-meter-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 7px;
+}
+
+.cpfl-last-value {
+    font-size: 0.65rem;
+    color: var(--text-light);
+    opacity: 0.75;
+    text-transform: none;
+    font-family: monospace, sans-serif;
+    font-weight: 600;
+}
+
+.cpfl-display-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.cpfl-display-input {
+    flex: 1;
+    background: var(--card-bg);
+    border: none;
+    border-bottom: 2.5px solid #e0e6ed;
+    border-radius: 0;
+    font-family: 'Courier New', 'Roboto Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    text-align: right;
+    padding: 4px 2px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
+.cpfl-display-input::-webkit-outer-spin-button,
+.cpfl-display-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cpfl-display-input:focus { outline: none; border-bottom-color: #3498db; }
+.cpfl-meter-block.valid   .cpfl-display-input { border-bottom-color: #27ae60; }
+.cpfl-meter-block.invalid .cpfl-display-input { border-bottom-color: #e74c3c; }
+
+.cpfl-unit {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.cpfl-delta {
+    margin-top: 5px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-light);
+    min-height: 18px;
+    transition: all 0.3s;
+    text-align: right;
+}
+.cpfl-delta.up   { color: #27ae60; }
+.cpfl-delta.down { color: #e74c3c; }
+
+.cpfl-divider {
+    align-self: center;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    padding-top: 6px;
+    flex-shrink: 0;
+}
+
+.cpfl-validation-msg {
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cpfl-validation-msg.error   { background: rgba(231,76,60,0.1);  color: #c0392b; }
+.cpfl-validation-msg.warning { background: rgba(230,126,34,0.1); color: #d35400; }
+.cpfl-validation-msg.ok      { background: rgba(39,174,96,0.1);  color: #1a8a4a; }
+
+/* Dark mode overrides */
+body.dark-mode .cpfl-display-input {
+    background: var(--card-bg);
+    color: var(--text);
+    border-bottom-color: #444;
+}
+body.dark-mode .cpfl-meter-block { background: #2a2a2a; }
+
+/* ========================================================================= */
+/* Quick Action Buttons for CPFL input                                       */
+/* ========================================================================= */
+.cpfl-quick-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 5px;
+}
+
+.cpfl-quick-btn {
+    background: var(--card-bg);
+    border: 1px solid #edf2f7;
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.cpfl-quick-btn:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+.cpfl-quick-btn.reset {
+    color: #e67e22;
+}
+
+.cpfl-quick-btn.reset:hover {
+    background: #fff3e0;
+    border-color: #ffcc80;
+}
+
+/* Dark mode overrides */
+body.dark-mode .cpfl-quick-btn {
+    background: #1e1e1e;
+    border-color: #444;
+    color: #e0e0e0;
+}
+body.dark-mode .cpfl-quick-btn:hover {
+    background: #333;
+    border-color: #555;
+}
+body.dark-mode .cpfl-quick-btn.reset:hover {
+    background: rgba(230,126,34,0.15);
+}
+

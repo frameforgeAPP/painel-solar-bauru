@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3222/3222672.png">
+    <link rel="apple-touch-icon" href="icon-v2.png">
+    <link rel="icon" href="icon-v2.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -75,12 +76,38 @@
                         <span class="sub-value">&nbsp;</span>
                     </div>
                 </div>
+
+                <!-- GAUGE DE POTÊNCIA ATUAL -->
+                <div class="power-gauge-container">
+                    <div class="power-gauge-header">
+                        <span><i class="fas fa-bolt"></i> Potência Instantânea</span>
+                        <span class="power-gauge-percent" id="gauge-percent">0%</span>
+                    </div>
+                    <div class="power-gauge-bar">
+                        <div class="power-gauge-fill" id="gauge-fill"></div>
+                    </div>
+                    <div class="power-gauge-footer">
+                        <span>0 W</span>
+                        <span id="gauge-max">-- W máx.</span>
+                    </div>
+                </div>
             </div>
 
             <!-- TOTAIS HISTÓRICOS -->
             <div class="card">
                 <h3><i class="fas fa-award"></i> Totais Desde a Instalação</h3>
-                <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 0; gap: 5px;">
+
+                <!-- Destaque: Total Gerado -->
+                <div style="background: linear-gradient(135deg, rgba(243,156,18,0.12), rgba(39,174,96,0.12)); border: 1px solid rgba(243,156,18,0.25); border-radius: 12px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-solar-panel" style="color: #f39c12; font-size: 1.1rem;"></i>
+                        <span style="font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light);">Geração Total</span>
+                    </div>
+                    <span class="value skeleton" id="val-total-ger" style="font-size: 1.1rem; background: linear-gradient(135deg, #e67e22, #27ae60); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0 <small>kWh</small></span>
+                </div>
+
+                <!-- 3 Métricas -->
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 8px; gap: 5px;">
                     <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
                         <span class="label" style="color: #27ae60; font-size: 0.55rem;">Uso do Sol</span>
                         <span class="value skeleton" id="val-total-uso" style="font-size: 0.85rem;">0 <small>kWh</small></span>
@@ -92,6 +119,18 @@
                     <div class="node home" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
                         <span class="label" style="color: #3498db; font-size: 0.55rem;">Compra CPFL</span>
                         <span class="value skeleton" id="val-total-imp" style="font-size: 0.85rem;">0 <small>kWh</small></span>
+                    </div>
+                </div>
+
+                <!-- Média diária do mês -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 10px; padding: 9px 14px;">
+                    <div style="display: flex; align-items: center; gap: 7px;">
+                        <i class="fas fa-chart-line" style="color: #9b59b6; font-size: 0.9rem;"></i>
+                        <span style="font-size: 0.68rem; font-weight: bold; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.4px;">Média Diária — <span id="val-avg-month-label">este mês</span></span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="value skeleton" id="val-avg-day" style="font-size: 0.95rem; color: #9b59b6;">-- <small>kWh/dia</small></span>
+                        <span id="val-avg-days" style="display: block; font-size: 0.6rem; color: var(--text-light);">baseado em -- dias</span>
                     </div>
                 </div>
             </div>
@@ -121,21 +160,91 @@
                 </div>
             </div>
 
-            <!-- LEITURAS CPFL -->
+            <!-- CONFIGURAÇÕES -->
             <div class="card">
-                <h3><i class="fas fa-edit"></i> Leituras CPFL (Bauru)</h3>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>Tela 03 (Import)</label>
-                        <input type="number" id="import" step="0.01" placeholder="kWh">
-                        <small id="hint-import" class="hint"></small>
+                <div class="settings-header" onclick="toggleSettings()">
+                    <h3 style="margin:0"><i class="fas fa-cog"></i> Configurações</h3>
+                    <button class="btn-settings-toggle" id="btn-settings-toggle">
+                        <i class="fas fa-chevron-down" id="settings-icon"></i> Editar
+                    </button>
+                </div>
+                <div class="settings-body" id="settings-body">
+                    <!-- Aviso de validade da tarifa -->
+                    <div style="background: rgba(52,152,219,0.08); border-left: 3px solid #3498db; border-radius: 6px; padding: 8px 12px; margin-top: 12px; font-size: 0.72rem; color: var(--text-light); line-height: 1.5;">
+                        <i class="fas fa-info-circle" style="color:#3498db;"></i>
+                        <strong>Tarifa CPFL Paulista (B1 Residencial):</strong> R$ 0,95/kWh<br>
+                        Vigente desde <strong id="tariff-valid-from">Abr/2026</strong> · Próximo reajuste: <strong id="tariff-valid-until">Abr/2027</strong><br>
+                        <span style="font-size:0.65rem;">Não existe API pública — atualizar manualmente após o reajuste anual de abril.</span>
                     </div>
-                    <div class="input-group">
-                        <label>Tela 103 (Export)</label>
-                        <input type="number" id="export" step="0.01" placeholder="kWh">
-                        <small id="hint-export" class="hint"></small>
+                    <div class="input-grid" style="margin-top: 10px;">
+                        <div class="input-group">
+                            <label>Tarifa (R$/kWh)</label>
+                            <input type="number" id="cfg-tariff" step="0.01" placeholder="0.95">
+                            <small class="hint">CPFL Paulista B1</small>
+                        </div>
+                        <div class="input-group">
+                            <label>Potência Máx. (W)</label>
+                            <input type="number" id="cfg-maxpower" step="100" placeholder="4960">
+                            <small class="hint">8 painéis × 620W</small>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> Salvar Configurações
+                    </button>
+                </div>
+            </div>
+
+            <!-- LEITURAS CPFL -->
+            <div class="card cpfl-card">
+                <div class="cpfl-header">
+                    <div>
+                        <h3 style="margin:0"><i class="fas fa-tachometer-alt"></i> Leituras CPFL</h3>
+                    </div>
+                    <div id="cpfl-status-dot" class="cpfl-status-dot"></div>
+                </div>
+
+                <div class="cpfl-meters">
+                    <!-- IMPORT -->
+                    <div class="cpfl-meter-block" id="cpfl-block-import">
+                        <div class="cpfl-meter-label">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <i class="fas fa-arrow-circle-down" style="color:#3498db"></i>
+                                <span>Tela 03 — Importado</span>
+                            </div>
+                            <span class="cpfl-last-value" id="cpfl-last-import">Último: —</span>
+                        </div>
+                        <div class="cpfl-display-wrap">
+                            <input type="number" id="import" class="cpfl-display-input" step="0.01"
+                                   placeholder="0" inputmode="decimal"
+                                   oninput="onCpflInput('import')">
+                            <span class="cpfl-unit">kWh</span>
+                        </div>
+                        <div class="cpfl-delta" id="cpfl-delta-import">—</div>
+                    </div>
+
+                    <div class="cpfl-divider"><i class="fas fa-exchange-alt"></i></div>
+
+                    <!-- EXPORT -->
+                    <div class="cpfl-meter-block" id="cpfl-block-export">
+                        <div class="cpfl-meter-label">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <i class="fas fa-arrow-circle-up" style="color:#27ae60"></i>
+                                <span>Tela 103 — Exportado</span>
+                            </div>
+                            <span class="cpfl-last-value" id="cpfl-last-export">Último: —</span>
+                        </div>
+                        <div class="cpfl-display-wrap">
+                            <input type="number" id="export" class="cpfl-display-input" step="0.01"
+                                   placeholder="0" inputmode="decimal"
+                                   oninput="onCpflInput('export')">
+                            <span class="cpfl-unit">kWh</span>
+                        </div>
+                        <div class="cpfl-delta" id="cpfl-delta-export">—</div>
                     </div>
                 </div>
+
+                <div id="cpfl-validation-msg" class="cpfl-validation-msg" style="display:none"></div>
+
                 <button class="btn-primary" id="btn-sync" onclick="syncData()">
                     <i class="fas fa-cloud-upload-alt"></i> Sincronizar Agora
                 </button>
@@ -159,13 +268,56 @@
                     </table>
                 </div>
             </div>
-            
+
+            <!-- PREVISAO DA FATURA CPFL -->
+            <div class="card" id="bill-card" style="cursor:pointer;" onclick="toggleBillDetails()">
+                <!-- Cabeçalho sempre visível -->
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 style="margin:0 0 2px 0"><i class="fas fa-file-invoice-dollar"></i> Previsão da Fatura</h3>
+                        <div id="bill-month-label" style="font-size:0.68rem; color:var(--text-light);"></div>
+                    </div>
+                    <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                        <div>
+                            <div id="bill-total" class="skeleton" style="font-size:1.5rem; font-weight:900; color:#e74c3c; line-height:1;">R$ --,--</div>
+                            <div style="font-size:0.6rem; color:var(--text-light); text-align:right;">estimativa</div>
+                        </div>
+                        <i id="bill-chevron" class="fas fa-chevron-down" style="color:var(--text-light); font-size:0.85rem; transition:transform 0.3s;"></i>
+                    </div>
+                </div>
+
+                <!-- Detalhes — colapsáveis -->
+                <div id="bill-details" style="max-height:0; overflow:hidden; transition:max-height 0.4s ease;">
+                    <div style="padding-top:14px;">
+                        <div id="bill-period-label" style="font-size:0.65rem; color:var(--text-light); margin-bottom:10px;"></div>
+
+                        <!-- Composição -->
+                        <div id="bill-line-items" style="font-size:0.78rem;"></div>
+
+                        <!-- Dados do ciclo -->
+                        <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--bg);">
+                            <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-light); font-size:0.78rem;">Import desde 12/05</span><span style="font-weight:bold;" id="bill-import-delta">--</span></div>
+                            <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-light); font-size:0.78rem;">Export desde 12/05</span><span style="font-weight:bold; color:#27ae60;" id="bill-export-delta">--</span></div>
+                            <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-light); font-size:0.78rem;">Consumo líquido atual</span><span style="font-weight:bold;" id="bill-net-real">--</span></div>
+                            <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--text-light); font-size:0.78rem;">Projeção 30 dias</span><span style="font-weight:bold; color:#e67e22;" id="bill-net-proj">--</span></div>
+                        </div>
+
+                        <div id="bill-breakdown" style="font-size:0.6rem; color:var(--text-light); margin-top:8px;"></div>
+                        <div style="font-size:0.6rem; color:var(--text-light); margin-top:4px;"><i class="fas fa-info-circle"></i> Atualizado automaticamente com os dados do histórico</div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+
 
         <footer class="footer">
             <div class="stat-row">
                 <span>CPFL Bauru - Bifásico</span>
-                <span id="val-savings" class="pos bold skeleton" style="min-width: 150px;">Economia Hoje: R$ 0,00</span>
+                <div style="text-align: right;">
+                    <div id="val-savings" class="pos bold skeleton">Hoje: R$ 0,00</div>
+                    <div id="val-savings-month">Mês: R$ 0,00</div>
+                </div>
             </div>
         </footer>
     </div>
