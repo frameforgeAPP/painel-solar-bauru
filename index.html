@@ -250,8 +250,15 @@
 
             <!-- HISTÓRICO RECENTE -->
             <div class="card">
-                <h3><i class="fas fa-history"></i> Histórico Recente</h3>
-                <div class="table-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin:0 !important;"><i class="fas fa-history"></i> Histórico Recente</h3>
+                    <div class="chart-tabs">
+                        <button id="hist-tab-table-btn" class="tab-btn active" onclick="switchHistoryTab('table')"><i class="fas fa-table"></i> Tabela</button>
+                        <button id="hist-tab-chart-btn" class="tab-btn" onclick="switchHistoryTab('chart')"><i class="fas fa-chart-line"></i> Gráfico</button>
+                    </div>
+                </div>
+                
+                <div id="history-table-container" class="table-container">
                     <table>
                         <thead>
                             <tr>
@@ -265,6 +272,10 @@
                         <tbody id="history-body"></tbody>
                     </table>
                 </div>
+
+                <div id="history-chart-container" style="display: none; position: relative; height: 180px; width: 100%;">
+                    <canvas id="historyEvolutionChart"></canvas>
+                </div>
             </div>
 
             <!-- PREVISAO DA FATURA CPFL -->
@@ -277,7 +288,7 @@
                     </div>
                     <div style="text-align:right; display:flex; align-items:center; gap:10px;">
                         <div>
-                            <div id="bill-total" class="skeleton" style="font-size:1.5rem; font-weight:900; color:#e74c3c; line-height:1;">R$ --,--</div>
+                            <div id="bill-total" class="skeleton" style="font-size:1.15rem; font-weight:800; color:#e74c3c; line-height:1.2;">R$ --,--</div>
                             <div style="font-size:0.6rem; color:var(--text-light); text-align:right;">estimativa</div>
                         </div>
                         <i id="bill-chevron" class="fas fa-chevron-down" style="color:var(--text-light); font-size:0.85rem; transition:transform 0.3s;"></i>

@@ -54,6 +54,12 @@ function toggleTheme() {
         icon.className = 'fas fa-moon';
         localStorage.setItem('theme', 'light');
     }
+    
+    // Redesenha o gráfico de evolução se a aba estiver ativa para atualizar as cores instantaneamente
+    const chartBtn = document.getElementById('hist-tab-chart-btn');
+    if (chartBtn && chartBtn.classList.contains('active')) {
+        renderHistoryEvolutionChart();
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -857,6 +863,11 @@ function renderHistory() {
         `;
     });
     tbody.innerHTML = html;
+
+    const chartBtn = document.getElementById('hist-tab-chart-btn');
+    if (chartBtn && chartBtn.classList.contains('active')) {
+        renderHistoryEvolutionChart();
+    }
 }
 
 function toggleDayDetails(date) {
@@ -865,6 +876,133 @@ function toggleDayDetails(date) {
     if (el) {
         el.classList.toggle('visible-row');
     }
+}
+
+// ─── Histórico Recente Tabs (Tabela / Gráfico) ───────────────────────────────
+function switchHistoryTab(tab) {
+    const tableBtn = document.getElementById('hist-tab-table-btn');
+    const chartBtn = document.getElementById('hist-tab-chart-btn');
+    const tableContainer = document.getElementById('history-table-container');
+    const chartContainer = document.getElementById('history-chart-container');
+    
+    if (!tableBtn || !chartBtn || !tableContainer || !chartContainer) return;
+    
+    if (tab === 'table') {
+        tableBtn.classList.add('active');
+        chartBtn.classList.remove('active');
+        tableContainer.style.display = 'block';
+        chartContainer.style.display = 'none';
+    } else {
+        tableBtn.classList.remove('active');
+        chartBtn.classList.add('active');
+        tableContainer.style.display = 'none';
+        chartContainer.style.display = 'block';
+        renderHistoryEvolutionChart();
+    }
+}
+
+let historyChartInstance = null;
+function renderHistoryEvolutionChart() {
+    const canvas = document.getElementById('historyEvolutionChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!state.history || state.history.length === 0) return;
+    
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+    const lastRecord = state.history[0];
+    
+    let sorted = [...state.history].reverse();
+    
+    let labels = sorted.map(h => h.date.split('/')[0] + '/' + h.date.split('/')[1]);
+    let impData = sorted.map(h => Number(h.import) || 0);
+    let expData = sorted.map(h => Number(h.export) || 0);
+    
+    if (lastRecord.date !== todayStr) {
+        labels.push('Hoje');
+        const liveImp = parseFloat(document.getElementById('import').value) || lastRecord.import;
+        const liveExp = parseFloat(document.getElementById('export').value) || lastRecord.export;
+        impData.push(liveImp);
+        expData.push(liveExp);
+    }
+    
+    if (historyChartInstance) {
+        historyChartInstance.destroy();
+    }
+    
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor = isDark ? '#444' : '#eee';
+    const textColor = isDark ? '#e0e0e0' : '#555';
+    
+    historyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Compra (IMP)',
+                    data: impData,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.05)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#3498db',
+                    pointHoverRadius: 5
+                },
+                {
+                    label: 'Crédito (EXP)',
+                    data: expData,
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.05)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#27ae60',
+                    pointHoverRadius: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 400
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        boxWidth: 10,
+                        font: { size: 9, weight: 'bold' },
+                        color: textColor
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.dataset.label}: ${context.raw.toFixed(1)} kWh`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 }, color: textColor }
+                },
+                y: {
+                    grid: { color: gridColor },
+                    ticks: { font: { size: 9 }, color: textColor }
+                }
+            }
+        }
+    });
 }
 
 

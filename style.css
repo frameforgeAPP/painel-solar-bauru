@@ -150,7 +150,14 @@ input { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10
 .header-with-btn { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .btn-small { background: #f0f2f5; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
 
-.table-container { overflow-x: auto; }
+.table-container {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.table-container::-webkit-scrollbar {
+    display: none;
+}
 table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
 th { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
 td { padding: 8px; border-bottom: 1px solid #f9f9f9; }
