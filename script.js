@@ -407,6 +407,8 @@ function updateDashboardUI() {
 
     state.history.forEach(h => {
         if (!h.date || !h.date.endsWith(monthKey)) return;
+        if (h.date === '10/05/2026') return; // Ignora o dia 10/05 (dia anterior à entrada oficial em operação em 11/05)
+        
         let dayProd = Number(h.production) || 0;
         if (h.date === todayStr2) {
             todayInHistory = true;
