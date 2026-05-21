@@ -1,0 +1,6 @@
+# Ignore dependencies and logs inside functions
+node_modules/
+npm-debug.log
+yarn-error.log
+firebase-debug.log
+.env
