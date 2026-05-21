@@ -1,6 +1,9 @@
 name: SolaX to Firestore Sync
 
 on:
+  push:
+    branches:
+      - master
   schedule:
     # Roda a cada 10 minutos, das 09:00 às 22:50 UTC (06:00 às 19:50 fuso de Brasília)
     - cron: '*/10 9-22 * * *'
