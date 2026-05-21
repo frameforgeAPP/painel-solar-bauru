@@ -629,4 +629,117 @@ body.dark-mode .cpfl-quick-btn.reset:hover {
 body.dark-mode .bill-card {
     background: linear-gradient(to right, rgba(231,76,60,0.03), var(--card-bg)) !important;
 }
+
+/* ========================================================================= */
+/* Scroll Lateral Horizontal Premium */
+/* ========================================================================= */
+#weather-forecast {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+#weather-forecast::-webkit-scrollbar {
+    height: 4px;
+}
+#weather-forecast::-webkit-scrollbar-thumb {
+    background: var(--text-light);
+    border-radius: 2px;
+    opacity: 0.5;
+}
+#weather-forecast > div {
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.chart-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-top: 10px;
+}
+.chart-scroll-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+.chart-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: var(--text-light);
+    border-radius: 3px;
+    opacity: 0.5;
+}
+.chart-scroll-area {
+    min-width: 580px; /* Largura para scroll lateral confortável */
+    height: 180px;
+    position: relative;
+}
+
+/* ========================================================================= */
+/* Versão PC Desktop Responsiva (CSS Grid 12 colunas) */
+/* ========================================================================= */
+@media (min-width: 992px) {
+    body {
+        padding: 20px;
+    }
+    .dashboard {
+        max-width: 1200px;
+        gap: 16px;
+    }
+    
+    header {
+        border-radius: 16px;
+        padding: 15px 20px;
+    }
+    
+    .tab-content {
+        display: grid !important;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+    }
+    
+    /* Mapeamento de Cartões na Grade de 12 colunas */
+    .card-weather {
+        grid-column: span 4;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .card-daily {
+        grid-column: span 8;
+    }
+    
+    .card-totals {
+        grid-column: span 4;
+    }
+    
+    .card-charts {
+        grid-column: span 8;
+    }
+    
+    .card-inverters {
+        grid-column: span 4;
+    }
+    
+    .card-settings {
+        grid-column: span 4;
+    }
+    
+    .card-cpfl {
+        grid-column: span 4;
+    }
+    
+    .card-history {
+        grid-column: span 6;
+    }
+    
+    .card-bill {
+        grid-column: span 3;
+    }
+    
+    .card-savings {
+        grid-column: span 3;
+    }
+}
 

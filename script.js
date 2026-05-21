@@ -231,6 +231,11 @@ async function syncSolaxOnly() {
     updateDashboardUI();
     renderInverters(state.invDetails);
 
+    // Salva a leitura atual no histórico de potência instantânea de hoje
+    if (successCount > 0) {
+        storeInstantPowerReading(totalWatts);
+    }
+
     if (totalWatts > 0 || totalYield > 0) {
         statusBadge.innerText = totalWatts > 0 ? 'Gerando Agora' : 'Conectado';
         statusBadge.className = 'badge online';
@@ -441,8 +446,11 @@ function updateDashboardUI() {
     if (avgDaysEl)  avgDaysEl.textContent = `baseado em ${daysWithData} dia${daysWithData !== 1 ? 's' : ''}`;
     if (avgLabelEl) avgLabelEl.textContent = monthName;
 
-    // Item 10: Atualiza o gauge de potência
+    // Item 10: Gauge visual de potência instantânea
     updatePowerGauge();
+    
+    // Novo: Atualiza o gráfico de linhas da potência instantânea de hoje
+    renderPowerInstantChart();
 
     document.getElementById('update-time').innerText = "Atualizado: " + new Date().toLocaleTimeString();
     renderChart();
@@ -606,13 +614,13 @@ function renderChart() {
     const todayStr = new Date().toLocaleDateString('pt-BR');
 
     if (state.history.length > 0) {
-        // Item 6: Removido filtro hardcoded do dia 10 que afetava todo mês
-        let last7 = [...state.history].slice(0, 7).reverse();
+        // Exibe os últimos 15 dias para rolagem lateral confortável
+        let lastDays = [...state.history].slice(0, 15).reverse();
         
         const lastRecord = state.history[0];
-        labels = last7.map(h => h.date.split('/')[0]);
+        labels = lastDays.map(h => h.date.split('/')[0]);
         
-        last7.forEach(h => {
+        lastDays.forEach(h => {
             const idx = state.history.findIndex(item => item.date === h.date);
             const prev = state.history[idx + 1];
             let dI = 0, dE = 0;
@@ -884,6 +892,7 @@ function switchHistoryTab(tab) {
     const chartBtn = document.getElementById('hist-tab-chart-btn');
     const tableContainer = document.getElementById('history-table-container');
     const chartContainer = document.getElementById('history-chart-container');
+    const scrollArea = document.getElementById('history-chart-scroll-area');
     
     if (!tableBtn || !chartBtn || !tableContainer || !chartContainer) return;
     
@@ -892,11 +901,13 @@ function switchHistoryTab(tab) {
         chartBtn.classList.remove('active');
         tableContainer.style.display = 'block';
         chartContainer.style.display = 'none';
+        if (scrollArea) scrollArea.style.display = 'none';
     } else {
         tableBtn.classList.remove('active');
         chartBtn.classList.add('active');
         tableContainer.style.display = 'none';
         chartContainer.style.display = 'block';
+        if (scrollArea) scrollArea.style.display = 'block';
         renderHistoryEvolutionChart();
     }
 }
@@ -915,6 +926,14 @@ function renderHistoryEvolutionChart() {
     let sorted = [...state.history].reverse();
     
     let labels = sorted.map(h => h.date.split('/')[0] + '/' + h.date.split('/')[1]);
+    
+    // Define a largura dinâmica para permitir a rolagem lateral confortável
+    const scrollArea = document.getElementById('history-chart-scroll-area');
+    if (scrollArea) {
+        const pointsCount = labels.length + (lastRecord.date !== todayStr ? 1 : 0);
+        const minWidth = Math.max(580, pointsCount * 45);
+        scrollArea.style.minWidth = minWidth + 'px';
+    }
     let impData = sorted.map(h => Number(h.import) || 0);
     let expData = sorted.map(h => Number(h.export) || 0);
     
@@ -1321,7 +1340,8 @@ async function fetchWeather() {
         if (!container) return;
         
         let html = '';
-        for(let i=0; i<5; i++) {
+        // Aumentado para 7 dias para visualização semanal completa com scroll lateral
+        for(let i=0; i<7; i++) {
             const dateStr = data.daily.time[i];
             const dateObj = new Date(dateStr + "T00:00:00");
             const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
@@ -1353,5 +1373,170 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('[SW] Registrado com sucesso:', reg.scope))
             .catch(err => console.error('[SW] Erro ao registrar:', err));
+    });
+}
+
+// =========================================================================
+/* Lógica do Gráfico de Potência Instantânea de Hoje (Rolagem e Cache) */
+// =========================================================================
+
+function storeInstantPowerReading(watts) {
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+    let powerHistory = JSON.parse(localStorage.getItem('power_instant_history'));
+    
+    // Se não houver histórico ou virou o dia, reinicia
+    if (!powerHistory || powerHistory.date !== todayStr) {
+        powerHistory = { date: todayStr, data: [] };
+    }
+    
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const nowTimestamp = Date.now();
+    
+    const lastPoint = powerHistory.data[powerHistory.data.length - 1];
+    
+    // Se o último ponto foi inserido há menos de 1 minuto, apenas atualiza
+    if (lastPoint && (nowTimestamp - lastPoint.timestamp < 60000)) {
+        lastPoint.watts = watts;
+        lastPoint.timestamp = nowTimestamp;
+    } else {
+        powerHistory.data.push({
+            time: timeStr,
+            watts: watts,
+            timestamp: nowTimestamp
+        });
+    }
+    
+    // Limita a 200 pontos para não estourar o localStorage
+    if (powerHistory.data.length > 200) {
+        powerHistory.data.shift();
+    }
+    
+    localStorage.setItem('power_instant_history', JSON.stringify(powerHistory));
+}
+
+function getMergedPowerHistory() {
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+    let localHist = JSON.parse(localStorage.getItem('power_instant_history'));
+    
+    if (!localHist || localHist.date !== todayStr) {
+        localHist = { date: todayStr, data: [] };
+    }
+    
+    let mergedPoints = [...localHist.data];
+    
+    // Mescla leituras gravadas no Firestore para hoje
+    const dbTodayReadings = state.groupedHistory[todayStr] || [];
+    dbTodayReadings.forEach(item => {
+        if (item.timestamp && item.watts !== undefined) {
+            const dateObj = item.timestamp.seconds ? new Date(item.timestamp.seconds * 1000) : new Date(item.timestamp);
+            const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            // Adiciona apenas se não houver um ponto local no mesmo minuto para evitar duplicidade
+            const exists = mergedPoints.some(pt => pt.time === timeStr);
+            if (!exists) {
+                mergedPoints.push({
+                    time: timeStr,
+                    watts: Number(item.watts) || 0,
+                    timestamp: dateObj.getTime()
+                });
+            }
+        }
+    });
+    
+    // Ordena por ordem cronológica de timestamp
+    mergedPoints.sort((a, b) => a.timestamp - b.timestamp);
+    return mergedPoints;
+}
+
+let powerInstantChartInstance = null;
+function renderPowerInstantChart() {
+    const canvas = document.getElementById('powerInstantChart');
+    if (!canvas) return;
+    
+    const container = document.getElementById('power-chart-container');
+    const dataPoints = getMergedPowerHistory();
+    
+    // Mostra o container se tiver dados, senão esconde
+    if (dataPoints.length === 0) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+    
+    if (container) container.style.display = 'block';
+    
+    const labels = dataPoints.map(pt => pt.time);
+    const wattsData = dataPoints.map(pt => pt.watts);
+    
+    const ctx = canvas.getContext('2d');
+    if (powerInstantChartInstance) {
+        powerInstantChartInstance.destroy();
+    }
+    
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+    const textColor = isDark ? '#a0a0a0' : '#7f8c8d';
+    
+    // Cria gradiente premium amarelo/laranja
+    const gradient = ctx.createLinearGradient(0, 0, 0, 90);
+    gradient.addColorStop(0, isDark ? 'rgba(241, 196, 15, 0.4)' : 'rgba(243, 156, 18, 0.35)');
+    gradient.addColorStop(1, 'rgba(243, 156, 18, 0.0)');
+    
+    powerInstantChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Potência (W)',
+                data: wattsData,
+                borderColor: isDark ? '#ffd54f' : '#f39c12',
+                backgroundColor: gradient,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: dataPoints.length > 20 ? 0 : 2.5,
+                pointHoverRadius: 5,
+                pointBackgroundColor: isDark ? '#ffd54f' : '#f39c12',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toLocaleString('pt-BR') + ' W';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: gridColor },
+                    ticks: {
+                        color: textColor,
+                        font: { size: 8 },
+                        maxTicksLimit: 4,
+                        callback: function(value) { return value + ' W'; }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: textColor,
+                        font: { size: 8 },
+                        maxTicksLimit: 6
+                    }
+                }
+            }
+        }
     });
 }
