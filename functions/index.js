@@ -46,15 +46,27 @@ async function fetchInverterWithRetry(sn, tokenId, retries = 3, delayMs = 2000) 
 
 /**
  * Cloud Function Agendada (Cron)
- * Roda a cada 5 minutos, das 06:00 às 20:55 (fuso horário America/Sao_Paulo)
+ * Roda a cada 5 minutos, das 06:30 às 19:30 (fuso horário America/Sao_Paulo)
  */
 exports.syncSolaxToFirestore = onSchedule({
-    schedule: "*/5 6-20 * * *",
+    schedule: "*/5 6-19 * * *",
     timeZone: "America/Sao_Paulo",
     memory: "256MiB",
     timeoutSeconds: 60
 }, async (event) => {
     logger.info("Iniciando execução da Cloud Function syncSolaxToFirestore...");
+
+    // Valida se está exatamente dentro do horário das 06:30 às 19:30 no fuso de São Paulo
+    const timeStr = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    const [hourStr, minStr] = timeStr.split(':');
+    const hour = parseInt(hourStr, 10);
+    const minute = parseInt(minStr, 10);
+    const timeValue = hour * 100 + minute;
+
+    if (timeValue < 630 || timeValue > 1930) {
+        logger.info(`Fora do horário operacional solicitado (${timeStr}). Encerrando execução antecipadamente.`);
+        return;
+    }
 
     const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     logger.info(`Data calculada no fuso de São Paulo: ${todayStr}`);
