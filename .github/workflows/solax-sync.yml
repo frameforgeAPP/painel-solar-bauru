@@ -1,0 +1,28 @@
+name: SolaX to Firestore Sync
+
+on:
+  schedule:
+    # Roda a cada 10 minutos, das 09:00 às 22:50 UTC (06:00 às 19:50 fuso de Brasília)
+    - cron: '*/10 9-22 * * *'
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub!
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install firebase-admin
+
+      - name: Run SolaX Sync Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node github-sync.js
