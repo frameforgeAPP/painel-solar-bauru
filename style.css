@@ -29,22 +29,22 @@ body {
     gap: 12px;
 }
 
-header { 
-    padding: 15px 5px; 
-    position: sticky; 
-    top: 0; 
-    z-index: 100; 
-    background: rgba(244, 247, 246, 0.85); 
-    backdrop-filter: blur(10px); 
-    -webkit-backdrop-filter: blur(10px); 
-    margin-bottom: 10px; 
+header {
+    padding: 15px 5px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(244, 247, 246, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    margin-bottom: 10px;
     border-radius: 8px;
 }
 .header-top { display: flex; justify-content: space-between; align-items: center; }
-header h1 { 
-    margin: 0; 
-    font-size: 1.4rem; 
-    font-weight: 800; 
+header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
     background: linear-gradient(135deg, #2c3e50, #3498db);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -144,8 +144,33 @@ input { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10
     color: #e74c3c !important;
 }
 
+.inverter-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.inverter-card-header h3 {
+    margin: 0 !important;
+}
 .inverter-item { background: #f8f9fa; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
 .inv-name { font-weight: bold; }
+.inverter-chart-wrapper {
+    margin-top: 0;
+}
+.inverter-chart-area {
+    min-width: 360px;
+    height: 190px;
+}
+.chart-empty-state {
+    padding: 18px 10px;
+    color: var(--text-light);
+    font-size: 0.72rem;
+    text-align: center;
+    background: var(--bg);
+    border-radius: 8px;
+}
 
 .header-with-btn { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .btn-small { background: #f0f2f5; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
@@ -686,18 +711,18 @@ body.dark-mode .bill-card {
         max-width: 1200px;
         gap: 16px;
     }
-    
+
     header {
         border-radius: 16px;
         padding: 15px 20px;
     }
-    
+
     .tab-content {
         display: grid !important;
         grid-template-columns: repeat(12, 1fr);
         gap: 16px;
     }
-    
+
     /* Mapeamento de Cartões na Grade de 12 colunas */
     .card-weather {
         grid-column: span 4;
@@ -705,41 +730,41 @@ body.dark-mode .bill-card {
         flex-direction: column;
         justify-content: space-between;
     }
-    
+
     .card-daily {
         grid-column: span 8;
     }
-    
+
     .card-totals {
         grid-column: span 4;
     }
-    
+
     .card-charts {
         grid-column: span 8;
     }
-    
+
     .card-inverters {
         grid-column: span 4;
     }
-    
+
     .card-settings {
         grid-column: span 4;
     }
-    
+
     .card-cpfl {
         grid-column: span 4;
     }
-    
+
     .card-history {
         grid-column: span 6;
     }
-    
+
     .card-bill {
         grid-column: span 3;
     }
-    
+
     .card-savings {
         grid-column: span 3;
     }
 }
-
+

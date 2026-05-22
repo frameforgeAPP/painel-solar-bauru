@@ -81,6 +81,7 @@ async function runSync() {
     let totalYield = 0;
     let totalWatts = 0;
     let successCount = 0;
+    const inverterDetails = [];
 
     results.forEach((r, index) => {
         const devName = DEVICES[index].name;
@@ -92,6 +93,12 @@ async function runSync() {
             totalYield += yDay;
             totalWatts += watts;
             successCount++;
+            inverterDetails[index] = {
+                sn: devSn,
+                name: devName,
+                watts,
+                production: yDay
+            };
             
             console.log(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh`);
         } else {
@@ -144,7 +151,9 @@ async function runSync() {
             import: lastImport,
             export: lastExport,
             production: Number(prodToSave.toFixed(2)),
-            watts: totalWatts
+            watts: totalWatts,
+            inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
+            inverters: inverterDetails
         };
 
         const docRef = await leiturasCol.add(reading);

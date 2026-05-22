@@ -40,6 +40,7 @@ let state = {
 let energyChart = null;
 let energyChartLine = null;
 let _cpflInitialized = false;
+let inverterPowerChartInstance = null;
 
 // ==========================================
 // TEMA (MODO ESCURO / CLARO)
@@ -59,6 +60,11 @@ function toggleTheme() {
     const chartBtn = document.getElementById('hist-tab-chart-btn');
     if (chartBtn && chartBtn.classList.contains('active')) {
         renderHistoryEvolutionChart();
+    }
+
+    const invChartBtn = document.getElementById('inv-tab-chart-btn');
+    if (invChartBtn && invChartBtn.classList.contains('active')) {
+        renderInverterPowerChart();
     }
 }
 
@@ -86,6 +92,24 @@ function switchChartTab(tab) {
     }
 }
 let historyChart = null;
+
+function switchInverterTab(tab) {
+    const listBtn = document.getElementById('inv-tab-list-btn');
+    const chartBtn = document.getElementById('inv-tab-chart-btn');
+    const listPanel = document.getElementById('inverter-list-panel');
+    const chartPanel = document.getElementById('inverter-chart-panel');
+
+    if (!listBtn || !chartBtn || !listPanel || !chartPanel) return;
+
+    listBtn.classList.toggle('active', tab === 'list');
+    chartBtn.classList.toggle('active', tab === 'chart');
+    listPanel.style.display = tab === 'list' ? 'block' : 'none';
+    chartPanel.style.display = tab === 'chart' ? 'block' : 'none';
+
+    if (tab === 'chart') {
+        renderInverterPowerChart();
+    }
+}
 
 // 3. Inicialização
 window.onload = () => {
@@ -232,8 +256,8 @@ async function syncSolaxOnly() {
     renderInverters(state.invDetails);
 
     // Salva a leitura atual no histórico de potência instantânea de hoje
-    if (successCount > 0) {
-        storeInstantPowerReading(totalWatts);
+    if (successCount === DEVICES.length) {
+        storeInstantPowerReading(totalWatts, state.invDetails.map(inv => inv.watts));
     }
 
     if (totalWatts > 0 || totalYield > 0) {
@@ -283,7 +307,14 @@ async function syncData() {
         import: impValue,
         export: expValue,
         production: prodToSave,
-        watts: state.wattsNow || 0
+        watts: state.wattsNow || 0,
+        inverterWatts: state.invDetails.map(inv => Number(inv.watts) || 0),
+        inverters: state.invDetails.map(inv => ({
+            sn: inv.sn,
+            name: inv.name,
+            watts: Number(inv.watts) || 0,
+            production: Number(inv.yield) || 0
+        }))
     };
 
     try {
@@ -451,6 +482,10 @@ function updateDashboardUI() {
     
     // Novo: Atualiza o gráfico de linhas da potência instantânea de hoje
     renderPowerInstantChart();
+    const invChartBtn = document.getElementById('inv-tab-chart-btn');
+    if (invChartBtn && invChartBtn.classList.contains('active')) {
+        renderInverterPowerChart();
+    }
 
     document.getElementById('update-time').innerText = "Atualizado: " + new Date().toLocaleTimeString();
     renderChart();
@@ -1380,7 +1415,7 @@ if ('serviceWorker' in navigator) {
 /* Lógica do Gráfico de Potência Instantânea de Hoje (Rolagem e Cache) */
 // =========================================================================
 
-function storeInstantPowerReading(watts) {
+function storeInstantPowerReading(watts, inverterWatts = []) {
     const todayStr = new Date().toLocaleDateString('pt-BR');
     let powerHistory = JSON.parse(localStorage.getItem('power_instant_history'));
     
@@ -1398,11 +1433,13 @@ function storeInstantPowerReading(watts) {
     // Se o último ponto foi inserido há menos de 1 minuto, apenas atualiza
     if (lastPoint && (nowTimestamp - lastPoint.timestamp < 60000)) {
         lastPoint.watts = watts;
+        lastPoint.inverterWatts = inverterWatts.map(v => Number(v) || 0);
         lastPoint.timestamp = nowTimestamp;
     } else {
         powerHistory.data.push({
             time: timeStr,
             watts: watts,
+            inverterWatts: inverterWatts.map(v => Number(v) || 0),
             timestamp: nowTimestamp
         });
     }
@@ -1413,6 +1450,21 @@ function storeInstantPowerReading(watts) {
     }
     
     localStorage.setItem('power_instant_history', JSON.stringify(powerHistory));
+}
+
+function getInverterWattsFromReading(item) {
+    if (!item) return [];
+
+    if (Array.isArray(item.inverterWatts)) {
+        return item.inverterWatts.map(v => Number(v) || 0);
+    }
+
+    if (Array.isArray(item.inverters)) {
+        return item.inverters.map(inv => Number(inv && inv.watts) || 0);
+    }
+
+    const hasLegacyFields = DEVICES.some((_, index) => item[`inv${index + 1}Watts`] !== undefined);
+    return hasLegacyFields ? DEVICES.map((_, index) => Number(item[`inv${index + 1}Watts`]) || 0) : [];
 }
 
 function getMergedPowerHistory() {
@@ -1438,6 +1490,7 @@ function getMergedPowerHistory() {
                 mergedPoints.push({
                     time: timeStr,
                     watts: Number(item.watts) || 0,
+                    inverterWatts: getInverterWattsFromReading(item),
                     timestamp: dateObj.getTime()
                 });
             }
@@ -1513,6 +1566,118 @@ function renderPowerInstantChart() {
                     callbacks: {
                         label: function(context) {
                             return context.parsed.y.toLocaleString('pt-BR') + ' W';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: gridColor },
+                    ticks: {
+                        color: textColor,
+                        font: { size: 8 },
+                        maxTicksLimit: 4,
+                        callback: function(value) { return value + ' W'; }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: textColor,
+                        font: { size: 8 },
+                        maxTicksLimit: 6
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderInverterPowerChart() {
+    const canvas = document.getElementById('inverterPowerChart');
+    const emptyEl = document.getElementById('inverter-chart-empty');
+    const wrapper = document.getElementById('inverter-chart-wrapper');
+    if (!canvas) return;
+
+    const dataPoints = getMergedPowerHistory().filter(pt => {
+        const watts = getInverterWattsFromReading(pt);
+        return watts.length > 0;
+    });
+
+    if (dataPoints.length === 0) {
+        if (inverterPowerChartInstance) {
+            inverterPowerChartInstance.destroy();
+            inverterPowerChartInstance = null;
+        }
+        if (emptyEl) emptyEl.style.display = 'block';
+        if (wrapper) wrapper.style.display = 'none';
+        return;
+    }
+
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (wrapper) wrapper.style.display = 'block';
+
+    const labels = dataPoints.map(pt => pt.time);
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+    const textColor = isDark ? '#a0a0a0' : '#7f8c8d';
+    const colors = [
+        { border: isDark ? '#ffd54f' : '#f39c12', bg: isDark ? 'rgba(255, 213, 79, 0.08)' : 'rgba(243, 156, 18, 0.08)' },
+        { border: isDark ? '#64b5f6' : '#3498db', bg: isDark ? 'rgba(100, 181, 246, 0.08)' : 'rgba(52, 152, 219, 0.08)' }
+    ];
+
+    const datasets = DEVICES.map((device, index) => ({
+        label: device.name.replace(' (Micro-4in1)', ''),
+        data: dataPoints.map(pt => {
+            const values = getInverterWattsFromReading(pt);
+            return values[index] !== undefined ? values[index] : null;
+        }),
+        borderColor: colors[index % colors.length].border,
+        backgroundColor: colors[index % colors.length].bg,
+        borderWidth: 2,
+        tension: 0.35,
+        fill: false,
+        spanGaps: true,
+        pointRadius: dataPoints.length > 24 ? 0 : 2.5,
+        pointHoverRadius: 5
+    }));
+
+    const ctx = canvas.getContext('2d');
+    if (inverterPowerChartInstance) {
+        inverterPowerChartInstance.destroy();
+    }
+
+    inverterPowerChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 350 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: textColor,
+                        boxWidth: 10,
+                        boxHeight: 10,
+                        font: { size: 10 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = Number(context.parsed.y) || 0;
+                            return `${context.dataset.label}: ${value.toLocaleString('pt-BR')} W`;
+                        },
+                        afterBody: function(items) {
+                            if (!items || items.length < 2) return '';
+                            const values = items.map(item => Number(item.parsed.y) || 0);
+                            const diff = Math.abs(values[0] - values[1]);
+                            return `Diferenca: ${diff.toLocaleString('pt-BR')} W`;
                         }
                     }
                 }
