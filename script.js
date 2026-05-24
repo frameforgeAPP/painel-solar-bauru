@@ -1907,8 +1907,7 @@ function renderInverterPowerChart() {
                     ticks: {
                         color: textColor,
                         font: { size: 8 },
-                        maxTicksLimit: 4,
-                        callback: function(value) { return value + ' W'; }
+                        maxTicksLimit: 6
                     }
                 },
                 x: {
@@ -1924,14 +1923,6 @@ function renderInverterPowerChart() {
     });
 }
 
-// =========================================================================
-/* Lógica do Modo Kiosk / Apresentador (Modo TV) */
-// =========================================================================
-
-let tvInterval = null;
-let tvProgressInterval = null;
-let currentTvSlideIndex = 0;
-let tvChartInstance = null;
 const TV_SLIDE_DURATION = 10000; // 10 segundos por slide
 
 function enterTvMode() {
@@ -1941,7 +1932,7 @@ function enterTvMode() {
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Bloqueia scroll do fundo
     
-    // Solicita tela cheia nativa do navegador (multibrowser)
+    // Converte e solicita tela cheia nativa do navegador (multibrowser)
     if (overlay.requestFullscreen) {
         overlay.requestFullscreen();
     } else if (overlay.webkitRequestFullscreen) {
@@ -1952,7 +1943,12 @@ function enterTvMode() {
         overlay.msRequestFullscreen();
     }
     
-    currentTvSlideIndex = 0;
+    // Determina se entra direto no modo noturno
+    const now = new Date();
+    const hour = now.getHours();
+    const isNight = (hour >= 22 || hour < 6);
+    
+    currentTvSlideIndex = isNight ? 'night' : 0;
     showTvSlide(currentTvSlideIndex);
     updateTvModeUI();
     
@@ -1992,13 +1988,35 @@ function startTvIntervals() {
     const totalSteps = TV_SLIDE_DURATION / stepTime;
     
     tvProgressInterval = setInterval(() => {
+        // Atualiza o relógio a cada 100ms para manter os segundos atualizados e vivos
+        updateTvClockTime();
+        
+        const now = new Date();
+        const hour = now.getHours();
+        const isNight = (hour >= 22 || hour < 6);
+        
+        if (isNight) {
+            if (currentTvSlideIndex !== 'night') {
+                // Se estiver no modo noturno e a contagem de 10s expirar, volta automaticamente para o relógio
+                currentTvSlideIndex = 'night';
+                showTvSlide('night');
+            }
+            return; // Bloqueia a rotação automática dos slides durante a noite
+        } else {
+            // Se virou o dia para manhã (06:00) e estávamos no relógio, reinicia no slide 0
+            if (currentTvSlideIndex === 'night') {
+                currentTvSlideIndex = 0;
+                showTvSlide(0);
+            }
+        }
+        
         progress += 100 / totalSteps;
         const fill = document.getElementById('tv-progress-fill');
         if (fill) fill.style.width = progress + '%';
         
         if (progress >= 100) {
             progress = 0;
-            currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre as 4 telas
+            currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre os 4 slides ativos
             showTvSlide(currentTvSlideIndex);
         }
     }, stepTime);
@@ -2012,31 +2030,56 @@ function stopTvIntervals() {
 }
 
 function showTvSlide(index) {
-    currentTvSlideIndex = index;
+    const now = new Date();
+    const hour = now.getHours();
+    const isNight = (hour >= 22 || hour < 6);
+    
+    // Se for noite e o usuário não clicou manualmente para ver outro slide, exibe relógio
+    let actualIndex = index;
+    if (isNight && index === 'night') {
+        actualIndex = 'night';
+    }
+    
+    currentTvSlideIndex = actualIndex;
     
     // Ativa slides
-    document.querySelectorAll('.tv-slide').forEach((slide, idx) => {
-        slide.classList.toggle('active', idx === index);
+    document.querySelectorAll('.tv-slide').forEach((slide) => {
+        if (slide.id === 'tv-slide-night') {
+            slide.classList.toggle('active', actualIndex === 'night');
+        } else {
+            const slideIdx = parseInt(slide.id.replace('tv-slide-', '')) - 1;
+            slide.classList.toggle('active', actualIndex === slideIdx);
+        }
     });
     
-    // Ativa bolinhas/dots
-    document.querySelectorAll('.tv-dot').forEach((dot, idx) => {
-        dot.classList.toggle('active', idx === index);
-    });
+    // Oculta dots e barra de progresso no relógio noturno para menor poluição luminosa
+    const dotsWrap = document.querySelector('.tv-dots');
+    const progressWrap = document.querySelector('.tv-progress-bar-wrap');
+    if (dotsWrap) dotsWrap.style.display = actualIndex === 'night' ? 'none' : 'flex';
+    if (progressWrap) progressWrap.style.display = actualIndex === 'night' ? 'none' : 'block';
+    
+    if (actualIndex !== 'night') {
+        // Ativa bolinhas/dots de navegação
+        document.querySelectorAll('.tv-dot').forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === actualIndex);
+        });
+        
+        if (actualIndex === 3) {
+            // Renderiza gráfico semanal de desempenho
+            setTimeout(renderTvEnergyChart, 80);
+        }
+    } else {
+        updateTvClockTime();
+    }
     
     // Reseta barra de progresso
     const fill = document.getElementById('tv-progress-fill');
     if (fill) fill.style.width = '0%';
-    
-    if (index === 3) {
-        // Renderiza gráfico semanal de desempenho
-        setTimeout(renderTvEnergyChart, 80);
-    }
 }
 
 function goToSlide(index) {
     showTvSlide(index);
-    startTvIntervals(); // Reinicia o timer para dar 10s cheios no slide clicado
+    startTvIntervals(); // Reinicia o timer para dar 10s cheios no slide clicado (ou restaurar o relógio após inatividade)
 }
 
 function updateTvModeUI() {
@@ -2269,7 +2312,34 @@ if (tvOverlay) {
         if (e.target.closest('.tv-close-btn') || e.target.closest('.tv-dots') || e.target.closest('.tv-dot')) {
             return;
         }
-        currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre as 4 telas
+        
+        const now = new Date();
+        const hour = now.getHours();
+        const isNight = (hour >= 22 || hour < 6);
+        
+        if (isNight) {
+            // Se estiver no relógio à noite e tocar na tela, mostra o slide 0 (painel) por 10 segundos
+            if (currentTvSlideIndex === 'night') {
+                currentTvSlideIndex = 0;
+            } else {
+                currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Avança entre os 4 normais
+            }
+        } else {
+            currentTvSlideIndex = (currentTvSlideIndex === 'night' ? 0 : (currentTvSlideIndex + 1) % 4);
+        }
         goToSlide(currentTvSlideIndex);
     });
+}
+
+function updateTvClockTime() {
+    const timeEl = document.getElementById('tv-night-clock-time');
+    const dateEl = document.getElementById('tv-night-clock-date');
+    if (!timeEl) return;
+    
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    
+    timeEl.textContent = timeStr;
+    if (dateEl) dateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 }

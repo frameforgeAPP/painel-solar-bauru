@@ -1401,3 +1401,66 @@ body.dark-mode .tv-mode-overlay {
         height: 10px;
     }
 }
+
+/* Estilos para o Relógio Noturno do Modo TV (Ativo das 22h às 06h) */
+.tv-night-clock-container {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-justify-content: center;
+    justify-content: center;
+    -webkit-align-items: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+.tv-night-clock-time {
+    font-size: 80px; /* Fallback para Android antigo */
+    font-size: 15vw; /* Tamanho fluido colossal */
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    color: #ffd54f !important; /* Dourado suave para economizar energia e ser agradável no escuro */
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.tv-night-clock-date {
+    font-size: 20px; /* Fallback */
+    font-size: 3vw;
+    color: #cbd5e1;
+    font-weight: 600;
+    margin-top: 15px; /* Fallback */
+    margin-top: 2vh;
+    margin-bottom: 15px; /* Fallback */
+    margin-bottom: 2vh;
+}
+
+.tv-night-clock-sub {
+    font-size: 14px; /* Fallback */
+    font-size: 2vw;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Ajustes responsivos para retrato em celulares no relógio noturno */
+@media (orientation: portrait), (max-width: 600px) {
+    .tv-night-clock-time {
+        font-size: 56px; /* Fallback */
+        font-size: 16vw;
+    }
+    .tv-night-clock-date {
+        font-size: 16px; /* Fallback */
+        font-size: 4vw;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .tv-night-clock-sub {
+        font-size: 11px; /* Fallback */
+        font-size: 3vw;
+    }
+}
