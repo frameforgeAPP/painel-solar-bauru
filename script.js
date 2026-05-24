@@ -2261,9 +2261,9 @@ function renderTvEnergyChart() {
         data: { 
             labels: labels, 
             datasets: [
-                { label: 'Uso do Sol', data: autoValues, backgroundColor: '#2ecc71', stack: 'Geração' },
-                { label: 'Exportado', data: exportValues, backgroundColor: '#f1c40f', stack: 'Geração', borderRadius: { topLeft: 6, topRight: 6 } },
-                { label: 'Compra CPFL', data: compraValues, backgroundColor: '#3498db', stack: 'Compra', borderRadius: { topLeft: 6, topRight: 6 } }
+                { label: 'Uso do Sol', data: autoValues, backgroundColor: '#00e676', stack: 'Geração' },
+                { label: 'Exportado', data: exportValues, backgroundColor: '#ffd600', stack: 'Geração', borderRadius: { topLeft: 6, topRight: 6 } },
+                { label: 'Compra CPFL', data: compraValues, backgroundColor: '#00b0ff', stack: 'Compra', borderRadius: { topLeft: 6, topRight: 6 } }
             ] 
         },
         plugins: [tvChartDataLabels], // Registra localmente o plugin de valores nas barras

@@ -820,7 +820,7 @@ body.dark-mode .advisor-card div div {
     width: 100vw;
     height: 100%; /* Fallback para Android antigo */
     height: 100vh;
-    background: #000000 !important; /* Pure black para máximo contraste */
+    background: radial-gradient(circle at 50% 10%, #0c0f1d, #000000 80%) !important; /* Cosmic dark background with gold glow source */
     color: #ffffff !important;
     z-index: 99999;
     display: -webkit-flex; /* Prefixo para Android antigo */
@@ -832,12 +832,12 @@ body.dark-mode .advisor-card div div {
     padding: 15px; /* Fallback para Android antigo */
     padding: 2vw;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
     overflow: hidden;
 }
 
 body.dark-mode .tv-mode-overlay {
-    background: #000000 !important;
+    background: radial-gradient(circle at 50% 10%, #080a14, #000000 85%) !important;
 }
 
 .tv-close-btn {
@@ -846,8 +846,10 @@ body.dark-mode .tv-mode-overlay {
     top: 2vw;
     right: 15px; /* Fallback */
     right: 2vw;
-    background: rgba(255, 255, 255, 0.12);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
     color: white;
     width: 46px; /* Fallback */
     width: 6vw;
@@ -866,12 +868,14 @@ body.dark-mode .tv-mode-overlay {
     align-items: center;
     -webkit-justify-content: center;
     justify-content: center;
-    transition: background 0.2s, transform 0.2s;
+    transition: background 0.3s, transform 0.3s, border-color 0.3s;
     outline: none;
     z-index: 100000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 .tv-close-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
     transform: scale(1.1);
 }
 
@@ -899,16 +903,16 @@ body.dark-mode .tv-mode-overlay {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    animation: tv-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tv-slide.active {
     display: -webkit-flex;
     display: flex;
+    animation: tv-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes tv-fade-in {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: scale(0.96) translateY(6px); filter: blur(3px); }
+    to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
 }
 
 .tv-slide-header {
@@ -922,23 +926,48 @@ body.dark-mode .tv-mode-overlay {
     font-size: 14px; /* Fallback */
     font-size: 1.8vw;
     font-weight: 800;
-    letter-spacing: 1.5px;
-    color: #ffd54f; /* High-contrast gold title */
+    letter-spacing: 2px;
+    color: #ffffff; 
     text-transform: uppercase;
     margin-bottom: 8px; /* Fallback */
     margin-bottom: 1vh;
 }
+.tv-slide-header span i {
+    background: linear-gradient(135deg, #ffd54f, #ff9800);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 5px rgba(255, 213, 79, 0.45));
+}
 
 .tv-status-badge {
-    background: rgba(39, 174, 96, 0.25);
-    border: 1px solid rgba(46, 204, 113, 0.4);
-    color: #2ecc71;
-    padding: 3px 8px; /* Fallback */
-    padding: 0.3vw 1vw;
+    background: rgba(39, 174, 96, 0.12) !important;
+    border: 1px solid rgba(46, 204, 113, 0.35) !important;
+    color: #2ecc71 !important;
+    padding: 4px 10px !important;
     border-radius: 30px;
     font-size: 11px; /* Fallback */
     font-size: 1.3vw;
     font-weight: 800;
+    display: -webkit-flex !important;
+    display: flex !important;
+    -webkit-align-items: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.15);
+}
+.tv-status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
+    animation: tv-led-pulse 1.8s infinite ease-in-out;
+}
+@keyframes tv-led-pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 12px #2ecc71; }
 }
 
 /* Grid split horizontal */
@@ -959,8 +988,10 @@ body.dark-mode .tv-mode-overlay {
 .tv-hero-block {
     -webkit-flex: 1;
     flex: 1;
-    background: #0a0a0a;
-    border: 2px solid #222222;
+    background: rgba(10, 10, 12, 0.72) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: 16px;
     padding: 15px; /* Fallback */
     padding: 2vh 2vw;
@@ -975,23 +1006,24 @@ body.dark-mode .tv-mode-overlay {
     box-sizing: border-box;
     text-align: center;
     position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.75) !important;
+    transition: border-color 0.3s;
 }
 
 .tv-hero-block.prod-hero {
-    border-color: rgba(255, 213, 79, 0.4);
+    border-color: rgba(255, 213, 79, 0.2) !important;
 }
 
 .tv-hero-block.watts-hero {
-    border-color: rgba(39, 174, 96, 0.4);
+    border-color: rgba(46, 204, 113, 0.2) !important;
 }
 
 .tv-hero-block.average-hero {
-    border-color: rgba(165, 94, 234, 0.4);
+    border-color: rgba(165, 94, 234, 0.2) !important;
 }
 
 .tv-hero-block.advisor-hero {
-    border-color: rgba(243, 156, 18, 0.4);
+    border-color: rgba(243, 156, 18, 0.2) !important;
     -webkit-align-items: flex-start;
     align-items: flex-start;
     padding: 15px 20px; /* Fallback */
@@ -1002,7 +1034,7 @@ body.dark-mode .tv-mode-overlay {
     font-size: 14px; /* Fallback */
     font-size: 1.8vw;
     font-weight: 800;
-    color: #f8fafc;
+    color: #94a3b8;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     margin-bottom: 8px; /* Fallback */
@@ -1020,11 +1052,20 @@ body.dark-mode .tv-mode-overlay {
     font-size: 8vw;
     font-weight: 900;
     line-height: 0.9;
-    letter-spacing: -2px;
-    font-family: 'Courier New', monospace;
+    letter-spacing: -1.5px;
+    font-family: 'Inter', -apple-system, sans-serif !important;
     color: #ffffff !important;
     background: none !important;
     -webkit-text-fill-color: #ffffff !important;
+}
+.prod-hero .tv-hero-value {
+    text-shadow: 0 0 20px rgba(255, 213, 79, 0.35);
+}
+.watts-hero .tv-hero-value {
+    text-shadow: 0 0 20px rgba(46, 204, 113, 0.35);
+}
+.average-hero .tv-hero-value {
+    text-shadow: 0 0 20px rgba(165, 94, 234, 0.35);
 }
 
 .tv-hero-value small {
@@ -1049,13 +1090,16 @@ body.dark-mode .tv-mode-overlay {
 .tv-metric-card {
     -webkit-flex: 1;
     flex: 1;
-    background: #0a0a0a;
-    border: 2px solid #222222;
+    background: rgba(10, 10, 12, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 8px 12px; /* Fallback */
     padding: 1vh 2vw;
     text-align: center;
     box-sizing: border-box;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
 .tv-metric-label {
@@ -1075,6 +1119,17 @@ body.dark-mode .tv-mode-overlay {
     font-weight: 900;
     color: #ffffff;
 }
+#tv-flow-cons {
+    text-shadow: 0 0 12px rgba(100, 181, 246, 0.3);
+}
+#tv-flow-grid.pos {
+    color: #2ecc71 !important;
+    text-shadow: 0 0 12px rgba(46, 204, 113, 0.35);
+}
+#tv-flow-grid.neg {
+    color: #ff4d6d !important;
+    text-shadow: 0 0 12px rgba(255, 77, 109, 0.35);
+}
 
 .tv-metric-card strong small {
     font-size: 11px; /* Fallback */
@@ -1085,12 +1140,15 @@ body.dark-mode .tv-mode-overlay {
 /* Gauge de potência */
 .tv-gauge-box {
     width: 100%;
-    background: #0a0a0a;
-    border: 2px solid #222222;
+    background: rgba(10, 10, 12, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 10px 15px; /* Fallback */
     padding: 1.5vh 2vw;
     box-sizing: border-box;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
 .tv-gauge-info {
@@ -1114,11 +1172,11 @@ body.dark-mode .tv-mode-overlay {
 .tv-gauge-bar {
     height: 10px; /* Fallback */
     height: 1.5vh;
-    background: #222222;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
     overflow: hidden;
     width: 100%;
-    border: 1px solid #333333;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .tv-gauge-fill {
@@ -1126,6 +1184,7 @@ body.dark-mode .tv-mode-overlay {
     width: 0%;
     border-radius: 6px;
     background: linear-gradient(90deg, #2ecc71, #ffeb3b, #e74c3c);
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
     transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1145,14 +1204,14 @@ body.dark-mode .tv-mode-overlay {
     font-size: 14px; /* Fallback */
     font-size: 1.8vw;
     line-height: 1.45;
-    color: #cbd5e1;
+    color: #e2e8f0;
     font-weight: 500;
 }
 
 .tv-avg-days-sub {
     font-size: 11px; /* Fallback */
     font-size: 1.4vw;
-    color: #94a3b8;
+    color: #64748b;
     margin-top: 5px; /* Fallback */
     margin-top: 1vh;
     font-weight: 700;
@@ -1180,8 +1239,10 @@ body.dark-mode .tv-mode-overlay {
     padding: 10px 5px !important; /* Fallback */
     padding: 1.5vh 1vw !important;
     border-radius: 16px !important;
-    background: #0a0a0a !important;
-    border: 2px solid #222222 !important;
+    background: rgba(10, 10, 12, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: -webkit-flex !important;
     display: flex !important;
     -webkit-flex-direction: column !important;
@@ -1191,13 +1252,19 @@ body.dark-mode .tv-mode-overlay {
     -webkit-justify-content: space-between !important;
     justify-content: space-between !important;
     box-sizing: border-box !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+}
+.tv-weather-forecast-container > div:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 213, 79, 0.35) !important;
 }
 
 .tv-weather-forecast-container i {
     font-size: 36px !important; /* Fallback */
     font-size: 5vw !important; /* Enormes ícones */
     margin: 8px 0 !important;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+    filter: drop-shadow(0 0 10px currentColor);
 }
 
 .tv-weather-forecast-container div {
@@ -1217,6 +1284,7 @@ body.dark-mode .tv-mode-overlay {
     border-color: rgba(255, 213, 79, 0.3) !important;
     color: #ffd54f !important;
     font-weight: 900 !important;
+    box-shadow: 0 0 8px rgba(255, 213, 79, 0.1);
 }
 
 /* Gráfico na TV */
@@ -1249,16 +1317,19 @@ body.dark-mode .tv-mode-overlay {
 .tv-progress-bar-wrap {
     width: 100%;
     max-width: 250px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 2px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
     overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 .tv-progress-fill {
     height: 100%;
     width: 0%;
-    background: #3498db;
-    border-radius: 2px;
+    background: linear-gradient(90deg, #3498db, #ffd54f) !important;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.8), 0 0 15px rgba(255, 213, 79, 0.5) !important;
 }
 
 .tv-dots {
@@ -1275,12 +1346,14 @@ body.dark-mode .tv-mode-overlay {
     min-width: 8px;
     min-height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: background 0.3s, transform 0.3s;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
 }
 .tv-dot.active {
-    background: #ffd54f;
+    background: linear-gradient(135deg, #ffd54f, #ff9800) !important;
+    box-shadow: 0 0 10px rgba(255, 213, 79, 0.8) !important;
     transform: scale(1.3);
 }
 
@@ -1425,6 +1498,12 @@ body.dark-mode .tv-mode-overlay {
     color: #ffd54f !important; /* Dourado suave para economizar energia e ser agradável no escuro */
     letter-spacing: -2px;
     line-height: 1;
+    text-shadow: 0 0 25px rgba(255, 213, 79, 0.25);
+    animation: tv-clock-glow 4s infinite ease-in-out;
+}
+@keyframes tv-clock-glow {
+    0%, 100% { text-shadow: 0 0 15px rgba(255, 213, 79, 0.15); opacity: 0.85; }
+    50% { text-shadow: 0 0 35px rgba(255, 213, 79, 0.45); opacity: 1; }
 }
 
 .tv-night-clock-date {
@@ -1436,6 +1515,7 @@ body.dark-mode .tv-mode-overlay {
     margin-top: 2vh;
     margin-bottom: 15px; /* Fallback */
     margin-bottom: 2vh;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .tv-night-clock-sub {
@@ -1445,6 +1525,7 @@ body.dark-mode .tv-mode-overlay {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 /* Ajustes responsivos para retrato em celulares no relógio noturno */
