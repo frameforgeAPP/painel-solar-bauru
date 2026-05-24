@@ -1923,6 +1923,9 @@ function renderInverterPowerChart() {
     });
 }
 
+let tvProgressInterval = null;
+let currentTvSlideIndex = 0;
+let tvChartInstance = null;
 const TV_SLIDE_DURATION = 10000; // 10 segundos por slide
 
 function enterTvMode() {
