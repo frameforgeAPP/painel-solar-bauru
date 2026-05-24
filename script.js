@@ -62,10 +62,7 @@ function toggleTheme() {
         renderHistoryEvolutionChart();
     }
 
-    const invChartBtn = document.getElementById('inv-tab-chart-btn');
-    if (invChartBtn && invChartBtn.classList.contains('active')) {
-        renderInverterPowerChart();
-    }
+    renderInverterPowerChart();
 }
 
 function toggleRecords() {
@@ -203,23 +200,7 @@ function switchChartTab(tab) {
 let historyChart = null;
 let lastWeatherData = null; // Armazena dados de clima globalmente
 
-function switchInverterTab(tab) {
-    const listBtn = document.getElementById('inv-tab-list-btn');
-    const chartBtn = document.getElementById('inv-tab-chart-btn');
-    const listPanel = document.getElementById('inverter-list-panel');
-    const chartPanel = document.getElementById('inverter-chart-panel');
 
-    if (!listBtn || !chartBtn || !listPanel || !chartPanel) return;
-
-    listBtn.classList.toggle('active', tab === 'list');
-    chartBtn.classList.toggle('active', tab === 'chart');
-    listPanel.style.display = tab === 'list' ? 'block' : 'none';
-    chartPanel.style.display = tab === 'chart' ? 'block' : 'none';
-
-    if (tab === 'chart') {
-        renderInverterPowerChart();
-    }
-}
 
 // 3. Inicialização
 window.onload = () => {
@@ -315,7 +296,7 @@ async function syncSolaxOnly() {
                     state.invDetails[i].watts       = watts;
                     state.invDetails[i].yield       = yDay;
                     state.invDetails[i].lifetimeKwh = yLifetime;
-                    state.invDetails[i].temp        = r.inverterTemp || '--';
+                    state.invDetails[i].temp        = r.temperature || r.temperBoard || r.inverterTemp || '--';
                     state.invDetails[i].status      = getStatusText(r.inverterStatus, watts);
                     state.invDetails[i].dcPower     = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4]
                         .filter(v => v !== null && v !== undefined);
@@ -606,11 +587,7 @@ function updateDashboardUI() {
     
     // Novo: Atualiza o gráfico de linhas da potência instantânea de hoje
     renderPowerInstantChart();
-    renderTempInstantChart();
-    const invChartBtn = document.getElementById('inv-tab-chart-btn');
-    if (invChartBtn && invChartBtn.classList.contains('active')) {
-        renderInverterPowerChart();
-    }
+    renderInverterPowerChart();
 
     document.getElementById('update-time').innerText = "Atualizado: " + new Date().toLocaleTimeString();
     calculateAllTimeRecords();
@@ -1234,20 +1211,39 @@ function getStatusText(code, watts = 0) {
 function renderInverters(list) {
     const container = document.getElementById('inverter-details');
     if (!container) return;
-    container.innerHTML = list.map(inv => {
-        const dcStrings = inv.dcPower && inv.dcPower.length > 0 
-            ? `<br><small>Strings: ${inv.dcPower.map(p => p + 'W').join(' | ')}</small>`
+    container.innerHTML = list.map((inv, index) => {
+        // Formata os painéis individuais conectados ao microinversor de forma limpa
+        const panelPower = inv.dcPower && inv.dcPower.length > 0 
+            ? `<div style="font-size: 0.65rem; color: var(--text-light); margin-top: 5px; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-solar-panel" style="font-size: 0.6rem; opacity: 0.7;"></i>
+                <span>${inv.dcPower.map(p => p + 'W').join(' · ')}</span>
+               </div>`
             : '';
+            
+        // Borda lateral e fundo soft combinando com as cores de cada inversor no gráfico
+        const borderStyle = index === 0 
+            ? 'border-left: 4.5px solid var(--solar); background: linear-gradient(to right, rgba(241, 196, 15, 0.04), var(--card-bg));'
+            : 'border-left: 4.5px solid var(--accent); background: linear-gradient(to right, rgba(52, 152, 219, 0.04), var(--card-bg));';
+            
+        // Nome limpo (sem o sufixo técnico do modelo)
+        const cleanName = inv.name.replace(' (Micro-4in1)', '');
+        
+        // Cores do badge de status baseadas no inversor
+        const badgeBg = index === 0 ? 'rgba(241, 196, 15, 0.12)' : 'rgba(52, 152, 219, 0.12)';
+        const badgeColor = index === 0 ? '#d35400' : '#2980b9';
+
         return `
-            <div class="inverter-item">
+            <div class="inverter-item" style="${borderStyle} padding: 10px 12px 10px 14px; margin-bottom: 8px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.015);">
                 <div>
-                    <span class="inv-name">${inv.name}</span><br>
-                    <small>${inv.status}</small>
-                    ${dcStrings}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="inv-name" style="font-size: 0.78rem; font-weight: 700; color: var(--text);">${cleanName}</span>
+                        <span style="font-size: 0.58rem; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px;">${inv.status}</span>
+                    </div>
+                    ${panelPower}
                 </div>
-                <div class="inv-stats">
-                    ${inv.watts}W <br>
-                    <small>${inv.yield.toFixed(2)} kWh</small>
+                <div class="inv-stats" style="text-align: right; line-height: 1.25;">
+                    <strong style="font-size: 0.95rem; font-weight: 800; color: var(--text);">${inv.watts} <small style="font-size: 0.65rem; font-weight: bold; color: var(--text-light);">W</small></strong><br>
+                    <small style="font-size: 0.65rem; color: var(--text-light); font-weight: 600;">${inv.yield.toFixed(2)} kWh</small>
                 </div>
             </div>`;
     }).join('');
@@ -1511,9 +1507,24 @@ function calcBillEstimate() {
 }
 
 async function fetchWeather() {
+    let data;
     try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo');
-        const data = await res.json();
+        data = await res.json();
+    } catch(e) {
+        console.warn("Direct weather fetch failed, attempting proxy fallback for older device compatibility...", e);
+        try {
+            const targetUrl = 'https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo';
+            const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+            const proxyData = await proxyRes.json();
+            data = JSON.parse(proxyData.contents);
+        } catch (proxyErr) {
+            console.error("Proxy fallback also failed:", proxyErr);
+            return; // Aborta silenciosamente se ambos falharem
+        }
+    }
+    
+    try {
         lastWeatherData = data; // Armazena dados de clima globalmente
         
         const weatherCodes = {
@@ -1708,118 +1719,6 @@ function getMergedPowerHistory() {
     return mergedPoints;
 }
 
-function switchInstantChartTab(tab) {
-    const powerBtn = document.getElementById('tab-power-btn');
-    const tempBtn = document.getElementById('tab-temp-btn');
-    const powerContainer = document.getElementById('power-chart-container');
-    const tempContainer = document.getElementById('temp-chart-container');
-
-    if (!powerBtn || !tempBtn || !powerContainer || !tempContainer) return;
-
-    if (tab === 'power') {
-        powerBtn.classList.add('active');
-        tempBtn.classList.remove('active');
-        powerContainer.style.display = 'block';
-        tempContainer.style.display = 'none';
-        if (powerInstantChartInstance) powerInstantChartInstance.update();
-    } else {
-        powerBtn.classList.remove('active');
-        tempBtn.classList.add('active');
-        powerContainer.style.display = 'none';
-        tempContainer.style.display = 'block';
-        renderTempInstantChart();
-    }
-}
-
-let tempInstantChartInstance = null;
-function renderTempInstantChart() {
-    const canvas = document.getElementById('tempInstantChart');
-    if (!canvas) return;
-    
-    const container = document.getElementById('temp-chart-container');
-    const dataPoints = getMergedPowerHistory();
-    
-    const validData = dataPoints.filter(pt => pt.inverterTemps && pt.inverterTemps.length > 0 && pt.inverterTemps[0] > 0);
-    
-    if (validData.length === 0) {
-        if (container) container.style.display = 'none';
-        return;
-    }
-    
-    const tempBtn = document.getElementById('tab-temp-btn');
-    if (tempBtn && tempBtn.classList.contains('active')) {
-        if (container) container.style.display = 'block';
-    }
-    
-    const labels = validData.map(pt => pt.time);
-    const temp1Data = validData.map(pt => pt.inverterTemps[0] || 0);
-    const temp2Data = validData.map(pt => pt.inverterTemps[1] || 0);
-    
-    const ctx = canvas.getContext('2d');
-    if (tempInstantChartInstance) {
-        tempInstantChartInstance.destroy();
-    }
-    
-    const isDark = document.body.classList.contains('dark-mode');
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
-    const textColor = isDark ? '#a0a0a0' : '#7f8c8d';
-    
-    tempInstantChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Micro Inv. 1',
-                    data: temp1Data,
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: validData.length > 20 ? 0 : 2.5
-                },
-                {
-                    label: 'Micro Inv. 2',
-                    data: temp2Data,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: validData.length > 20 ? 0 : 2.5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 400 },
-            plugins: {
-                legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 9 }, color: textColor } },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y + ' °C';
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    grid: { color: gridColor },
-                    ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 5, callback: function(value) { return value + '°C'; } }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 6 }
-                }
-            }
-        }
-    });
-}
 
 let powerInstantChartInstance = null;
 function renderPowerInstantChart() {
@@ -2022,5 +1921,355 @@ function renderInverterPowerChart() {
                 }
             }
         }
+    });
+}
+
+// =========================================================================
+/* Lógica do Modo Kiosk / Apresentador (Modo TV) */
+// =========================================================================
+
+let tvInterval = null;
+let tvProgressInterval = null;
+let currentTvSlideIndex = 0;
+let tvChartInstance = null;
+const TV_SLIDE_DURATION = 10000; // 10 segundos por slide
+
+function enterTvMode() {
+    const overlay = document.getElementById('tv-mode-overlay');
+    if (!overlay) return;
+    
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Bloqueia scroll do fundo
+    
+    // Solicita tela cheia nativa do navegador (multibrowser)
+    if (overlay.requestFullscreen) {
+        overlay.requestFullscreen();
+    } else if (overlay.webkitRequestFullscreen) {
+        overlay.webkitRequestFullscreen();
+    } else if (overlay.mozRequestFullScreen) {
+        overlay.mozRequestFullScreen();
+    } else if (overlay.msRequestFullscreen) {
+        overlay.msRequestFullscreen();
+    }
+    
+    currentTvSlideIndex = 0;
+    showTvSlide(currentTvSlideIndex);
+    updateTvModeUI();
+    
+    // Inicia intervalos
+    startTvIntervals();
+}
+
+function exitTvMode() {
+    const overlay = document.getElementById('tv-mode-overlay');
+    if (!overlay) return;
+    
+    overlay.style.display = 'none';
+    document.body.style.overflow = ''; // Restaura scroll
+    
+    // Sai do modo tela cheia se o navegador estiver nele
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+    
+    // Para intervalos
+    stopTvIntervals();
+}
+
+function startTvIntervals() {
+    stopTvIntervals();
+    
+    let progress = 0;
+    const stepTime = 100; // 100ms
+    const totalSteps = TV_SLIDE_DURATION / stepTime;
+    
+    tvProgressInterval = setInterval(() => {
+        progress += 100 / totalSteps;
+        const fill = document.getElementById('tv-progress-fill');
+        if (fill) fill.style.width = progress + '%';
+        
+        if (progress >= 100) {
+            progress = 0;
+            currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre as 4 telas
+            showTvSlide(currentTvSlideIndex);
+        }
+    }, stepTime);
+}
+
+function stopTvIntervals() {
+    if (tvProgressInterval) {
+        clearInterval(tvProgressInterval);
+        tvProgressInterval = null;
+    }
+}
+
+function showTvSlide(index) {
+    currentTvSlideIndex = index;
+    
+    // Ativa slides
+    document.querySelectorAll('.tv-slide').forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === index);
+    });
+    
+    // Ativa bolinhas/dots
+    document.querySelectorAll('.tv-dot').forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === index);
+    });
+    
+    // Reseta barra de progresso
+    const fill = document.getElementById('tv-progress-fill');
+    if (fill) fill.style.width = '0%';
+    
+    if (index === 3) {
+        // Renderiza gráfico semanal de desempenho
+        setTimeout(renderTvEnergyChart, 80);
+    }
+}
+
+function goToSlide(index) {
+    showTvSlide(index);
+    startTvIntervals(); // Reinicia o timer para dar 10s cheios no slide clicado
+}
+
+function updateTvModeUI() {
+    if (document.getElementById('tv-mode-overlay').style.display === 'none') return;
+    
+    // --- Slide 1: Diário & Potência Instantânea (Split Horizontal) ---
+    const wattsEl = document.getElementById('tv-watts');
+    if (wattsEl) wattsEl.innerHTML = `${state.wattsNow || 0} <small>W</small>`;
+    
+    // Geração Diária (kWh)
+    const flowProdEl = document.getElementById('tv-flow-prod');
+    if (flowProdEl) flowProdEl.innerHTML = `${state.productionToday.toFixed(2)} <small>kWh</small>`;
+    
+    // Consumo Diário (kWh)
+    const flowConsEl = document.getElementById('tv-flow-cons');
+    const realConsEl = document.getElementById('val-consumption');
+    if (flowConsEl && realConsEl) {
+        flowConsEl.innerHTML = realConsEl.innerHTML;
+    }
+    
+    // Rede/Saldo Diário (kWh)
+    const flowGridEl = document.getElementById('tv-flow-grid');
+    const realGridEl = document.getElementById('val-grid');
+    if (flowGridEl && realGridEl) {
+        flowGridEl.innerHTML = realGridEl.innerHTML;
+        flowGridEl.className = realGridEl.className; // Copia classe pos/neg
+    }
+    
+    // Atualiza a Barra Gauge de Potência Instantânea
+    const watts = state.wattsNow || 0;
+    const pct = Math.min(100, Math.round((watts / MAX_POWER_W) * 100));
+    const fill = document.getElementById('tv-gauge-fill');
+    const pctEl = document.getElementById('tv-gauge-percent');
+    const currentEl = document.getElementById('tv-gauge-current');
+    const maxEl = document.getElementById('tv-gauge-max');
+    
+    if (fill) {
+        fill.style.width = pct + '%';
+        if (pct >= 70)      fill.style.background = 'linear-gradient(90deg, #27ae60, #2ecc71)';
+        else if (pct >= 40) fill.style.background = 'linear-gradient(90deg, #f39c12, #f1c40f)';
+        else if (pct > 0)   fill.style.background = 'linear-gradient(90deg, #e67e22, #e74c3c)';
+        else                fill.style.background = 'rgba(255,255,255,0.15)';
+    }
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (currentEl) currentEl.textContent = `${watts.toLocaleString('pt-BR')} W`;
+    if (maxEl) maxEl.textContent = `${MAX_POWER_W.toLocaleString('pt-BR')} W`;
+    
+    // --- Slide 2: Previsão do Tempo ---
+    const tvWeather = document.getElementById('tv-weather-container');
+    const realWeather = document.getElementById('weather-forecast');
+    if (tvWeather && realWeather) {
+        tvWeather.innerHTML = realWeather.innerHTML;
+    }
+    
+    // --- Slide 3: Média Diária & Smart Advisor (Split Horizontal) ---
+    const avgValueEl = document.getElementById('tv-avg-value');
+    const realAvgEl = document.getElementById('val-avg-day');
+    if (avgValueEl && realAvgEl) {
+        avgValueEl.innerHTML = realAvgEl.innerHTML;
+    }
+    
+    const avgDaysEl = document.getElementById('tv-avg-days');
+    const realAvgDaysEl = document.getElementById('val-avg-days');
+    if (avgDaysEl && realAvgDaysEl) {
+        avgDaysEl.textContent = realAvgDaysEl.textContent;
+    }
+    
+    const advisorEl = document.getElementById('tv-advisor-text');
+    const realAdvisorEl = document.getElementById('advisor-text');
+    if (advisorEl && realAdvisorEl) {
+        advisorEl.textContent = realAdvisorEl.textContent;
+    }
+    
+    // --- Status badge slide 1 ---
+    const statusEl = document.getElementById('tv-status');
+    const realBadge = document.getElementById('status-badge');
+    if (statusEl && realBadge) {
+        statusEl.textContent = realBadge.textContent;
+        statusEl.style.background = realBadge.className.includes('online') ? 'rgba(39, 174, 96, 0.15)' : 'rgba(229, 115, 115, 0.15)';
+        statusEl.style.color = realBadge.className.includes('online') ? '#4ade80' : '#f87171';
+    }
+}
+
+function renderTvEnergyChart() {
+    const canvas = document.getElementById('tvEnergyChart');
+    if (!canvas) return;
+    
+    let labels = [];
+    let autoValues = [];     
+    let exportValues = [];   
+    let compraValues = [];
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+
+    if (state.history.length > 0) {
+        let lastDays = [...state.history].slice(0, 7).reverse();
+        const lastRecord = state.history[0];
+        labels = lastDays.map(h => h.date.split('/')[0]);
+        
+        lastDays.forEach(h => {
+            const idx = state.history.findIndex(item => item.date === h.date);
+            const prev = state.history[idx + 1];
+            let dI = 0, dE = 0;
+            if (prev) {
+                dI = Math.max(0, Number(h.import) - Number(prev.import));
+                dE = Math.max(0, Number(h.export) - Number(prev.export));
+            }
+            let prod = Number(h.production || 0);
+            if (h.date === todayStr) {
+                prod = Math.max(prod, state.productionToday);
+            }
+            const auto = Math.max(0, prod - dE);
+            autoValues.push(auto);
+            exportValues.push(dE);
+            compraValues.push(dI);
+        });
+
+        if (lastRecord.date !== todayStr) {
+            labels.push('Hoje');
+            const liveImp = parseFloat(document.getElementById('import').value) || lastRecord.import;
+            const liveExp = parseFloat(document.getElementById('export').value) || lastRecord.export;
+            const dI = Math.max(0, liveImp - lastRecord.import);
+            const dE = Math.max(0, liveExp - lastRecord.export);
+            let realProd = state.productionToday;
+            if (realProd === lastRecord.production && state.wattsNow === 0) realProd = 0;
+            const auto = Math.max(0, realProd - dE);
+            autoValues.push(auto);
+            exportValues.push(dE);
+            compraValues.push(dI);
+        }
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (tvChartInstance) tvChartInstance.destroy();
+    
+    // Plugin embutido para renderizar os valores numéricos diretamente nas barras no Modo TV
+    const tvChartDataLabels = {
+        id: 'tvChartDataLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            // Adiciona sombra preta projetada de alta legibilidade
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            
+            chart.data.labels.forEach((label, index) => {
+                const auto = autoValues[index] || 0;
+                const dE = exportValues[index] || 0;
+                const dI = compraValues[index] || 0;
+                const prod = auto + dE; // Geração Total do Dia
+                
+                const metaGen = chart.getDatasetMeta(1).data[index];
+                const metaCompra = chart.getDatasetMeta(2).data[index];
+
+                if (prod > 0 && metaGen) {
+                    ctx.fillStyle = '#ffeb3b'; // Amarelo neon para Geração
+                    ctx.font = 'bold 13px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(prod.toFixed(1), metaGen.x, metaGen.y - 6);
+                }
+                if (dI > 0 && metaCompra) {
+                    ctx.fillStyle = '#64b5f6'; // Azul neon para Compra
+                    ctx.font = 'bold 13px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(dI.toFixed(1), metaCompra.x, metaCompra.y - 6);
+                }
+            });
+            ctx.restore();
+        }
+    };
+
+    // Configuração de cores e fontes gigantes de alto contraste para TV/Apresentador
+    tvChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { 
+            labels: labels, 
+            datasets: [
+                { label: 'Uso do Sol', data: autoValues, backgroundColor: '#2ecc71', stack: 'Geração' },
+                { label: 'Exportado', data: exportValues, backgroundColor: '#f1c40f', stack: 'Geração', borderRadius: { topLeft: 6, topRight: 6 } },
+                { label: 'Compra CPFL', data: compraValues, backgroundColor: '#3498db', stack: 'Compra', borderRadius: { topLeft: 6, topRight: 6 } }
+            ] 
+        },
+        plugins: [tvChartDataLabels], // Registra localmente o plugin de valores nas barras
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { 
+                    display: true, 
+                    position: 'top', 
+                    labels: { 
+                        boxWidth: 20, 
+                        font: { size: 14, weight: 'bold' }, 
+                        color: '#f8fafc',
+                        padding: 12
+                    } 
+                } 
+            }, 
+            scales: { 
+                y: { 
+                    stacked: true, 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.12)' },
+                    ticks: { color: '#cbd5e1', font: { size: 13, weight: 'bold' }, padding: 8 }
+                }, 
+                x: { 
+                    stacked: true, 
+                    grid: { display: false },
+                    ticks: { color: '#cbd5e1', font: { size: 13, weight: 'bold' }, padding: 8 }
+                } 
+            } 
+        }
+    });
+}
+
+// Sobrescreve updateDashboardUI para atualizar o apresentador se estiver ativo
+const originalUpdateDashboardUI = updateDashboardUI;
+updateDashboardUI = function() {
+    originalUpdateDashboardUI();
+    updateTvModeUI();
+};
+
+// Configura o evento de clique em todo o Painel para passar de tela com toque (Regra 3)
+const tvOverlay = document.getElementById('tv-mode-overlay');
+if (tvOverlay) {
+    tvOverlay.style.cursor = 'pointer';
+    tvOverlay.addEventListener('click', (e) => {
+        // Se o usuário clicar no botão de fechar ou nos dots de paginação, não avança
+        if (e.target.closest('.tv-close-btn') || e.target.closest('.tv-dots') || e.target.closest('.tv-dot')) {
+            return;
+        }
+        currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre as 4 telas
+        goToSlide(currentTvSlideIndex);
     });
 }

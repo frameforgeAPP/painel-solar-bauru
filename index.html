@@ -22,10 +22,13 @@
         <header>
             <div class="header-top">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <h1><i class="fas fa-solar-panel"></i> Solar Monitor</h1>
-                    <button id="theme-toggle" onclick="toggleTheme()" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; padding: 0; outline: none;">
-                        <i id="theme-icon" class="fas fa-moon"></i>
-                    </button>
+                     <h1><i class="fas fa-solar-panel"></i> Solar Monitor</h1>
+                     <button id="theme-toggle" onclick="toggleTheme()" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; padding: 0; outline: none;">
+                         <i id="theme-icon" class="fas fa-moon"></i>
+                     </button>
+                     <button id="tv-toggle" onclick="enterTvMode()" style="background: transparent; border: none; padding: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none;" title="Modo TV / Apresentador">
+                         <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-light); display: inline-block; opacity: 0.6; transition: opacity 0.2s, transform 0.2s;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity='0.6'; this.style.transform='scale(1)';" id="tv-toggle-dot"></span>
+                     </button>
                 </div>
                 <div id="status-badge" class="badge">Iniciando...</div>
             </div>
@@ -103,18 +106,9 @@
                             <i class="fas fa-arrow-up" style="color: #e74c3c;"></i> Pico: <strong id="gauge-peak-day" style="color: var(--text);">-- W</strong> <span id="gauge-peak-time" style="font-size: 0.55rem;">(--:--)</span>
                         </div>
                     </div>
-                    <!-- Abas do Gráfico de Potência Instantânea do Dia -->
-                    <div class="chart-tabs" style="justify-content: flex-start; margin-top: 15px; border-bottom: none;">
-                        <button id="tab-power-btn" class="tab-btn active" onclick="switchInstantChartTab('power')"><i class="fas fa-bolt"></i> Potência</button>
-                        <button id="tab-temp-btn" class="tab-btn" onclick="switchInstantChartTab('temp')"><i class="fas fa-thermometer-half"></i> Temperatura</button>
-                    </div>
                     <!-- Gráfico de Potência Instantânea do Dia -->
-                    <div id="power-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 5px; display: none;">
+                    <div id="power-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 15px; display: none;">
                         <canvas id="powerInstantChart"></canvas>
-                    </div>
-                    <!-- Gráfico de Temperatura Instantânea do Dia -->
-                    <div id="temp-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 5px; display: none;">
-                        <canvas id="tempInstantChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -209,20 +203,20 @@
 
             <!-- IDENTIFICAÇÃO DOS INVERSORES -->
             <div class="card card-inverters">
-                <div class="inverter-card-header">
-                <h3><i class="fas fa-microchip"></i> Identificação dos Microinversores</h3>
-                    <div class="chart-tabs">
-                        <button id="inv-tab-list-btn" class="tab-btn active" onclick="switchInverterTab('list')"><i class="fas fa-list"></i> Detalhes</button>
-                        <button id="inv-tab-chart-btn" class="tab-btn" onclick="switchInverterTab('chart')"><i class="fas fa-chart-line"></i> Grafico</button>
+                <h3 style="margin-top: 0; margin-bottom: 15px;"><i class="fas fa-microchip"></i> Identificação dos Microinversores</h3>
+                
+                <div id="inverter-list-panel" style="margin-bottom: 15px;">
+                    <div id="inverter-details" class="inverter-list">
+                        <!-- Preenchido via script.js -->
                     </div>
                 </div>
-                <div id="inverter-list-panel">
-                <div id="inverter-details" class="inverter-list">
-                    <!-- Preenchido via script.js -->
-                </div>
-                </div>
-                <div id="inverter-chart-panel" style="display: none;">
-                    <div id="inverter-chart-wrapper" class="chart-scroll-wrapper inverter-chart-wrapper">
+                
+                <div id="inverter-chart-panel" style="border-top: 1px dashed var(--bg); padding-top: 15px;">
+                    <div style="font-size: 0.68rem; font-weight: bold; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-chart-line" style="color: #3498db;"></i>
+                        <span>Gráfico de Potência de Hoje</span>
+                    </div>
+                    <div id="inverter-chart-wrapper" class="chart-scroll-wrapper inverter-chart-wrapper" style="margin-top: 0;">
                         <div class="chart-scroll-area inverter-chart-area">
                             <canvas id="inverterPowerChart"></canvas>
                         </div>
@@ -432,7 +426,118 @@
 
             <!-- FOOTER DE VERSÃO -->
             <div style="text-align: center; font-size: 0.6rem; color: var(--text-light); margin: 24px 0 12px; opacity: 0.7; font-weight: 500;">
-                Solar Monitor Pro · Versão Beta 1.5
+                Solar Monitor Pro · Versão Beta 1.6
+            </div>
+    <!-- MODAL DO APRESENTADOR (MODO TV) -->
+    <div id="tv-mode-overlay" class="tv-mode-overlay" style="display: none;">
+        <!-- Botão Fechar -->
+        <button class="tv-close-btn" onclick="exitTvMode()"><i class="fas fa-times"></i></button>
+        
+        <!-- Conteúdo do Slideshow -->
+        <div class="tv-slide-container">
+            
+            <!-- Slide 1: Geração de Hoje & Potência Instantânea (Split Horizontal) -->
+            <div class="tv-slide active" id="tv-slide-1">
+                <div class="tv-slide-header">
+                    <span><i class="fas fa-calendar-day"></i> GERAÇÃO DE HOJE</span>
+                    <span id="tv-status" class="tv-status-badge">ONLINE</span>
+                </div>
+                
+                <div class="tv-hero-split">
+                    <!-- Esquerda: Geração Total do Dia -->
+                    <div class="tv-hero-block prod-hero">
+                        <span class="tv-hero-label"><i class="fas fa-sun" style="color: #ffd54f;"></i> GERADO HOJE</span>
+                        <strong class="tv-hero-value" id="tv-flow-prod">0.00 <small>kWh</small></strong>
+                    </div>
+                    
+                    <!-- Direita: Potência Instantânea -->
+                    <div class="tv-hero-block watts-hero">
+                        <span class="tv-hero-label"><i class="fas fa-bolt" style="color: #ffd54f;"></i> POTÊNCIA ATUAL</span>
+                        <strong class="tv-hero-value" id="tv-watts">0 <small>W</small></strong>
+                    </div>
+                </div>
+                
+                <div class="tv-row-metrics">
+                    <div class="tv-metric-card">
+                        <span class="tv-metric-label" style="color: #64b5f6;"><i class="fas fa-home"></i> CONSUMO</span>
+                        <strong id="tv-flow-cons">0.00 <small>kWh</small></strong>
+                    </div>
+                    <div class="tv-metric-card">
+                        <span class="tv-metric-label" id="tv-flow-grid-label" style="color: #ff8a65;"><i class="fas fa-exchange-alt"></i> REDE (SALDO)</span>
+                        <strong id="tv-flow-grid">0.0 <small>kWh</small></strong>
+                    </div>
+                </div>
+                
+                <!-- Barra Gauge Potência Instantânea -->
+                <div class="tv-gauge-box">
+                    <div class="tv-gauge-info">
+                        <span><i class="fas fa-bolt" style="color: #ffd54f;"></i> Potência Atual: <strong id="tv-gauge-current">0 W</strong></span>
+                        <span id="tv-gauge-percent" style="color: #ffd54f;">0%</span>
+                        <span>MÁX: <strong id="tv-gauge-max">-- W</strong></span>
+                    </div>
+                    <div class="tv-gauge-bar">
+                        <div id="tv-gauge-fill" class="tv-gauge-fill"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 2: Previsão do Tempo -->
+            <div class="tv-slide" id="tv-slide-2">
+                <div class="tv-slide-header">
+                    <span><i class="fas fa-cloud-sun"></i> PREVISÃO DO TEMPO (BAURU)</span>
+                </div>
+                <!-- Previsão Clima Gigante -->
+                <div id="tv-weather-container" class="tv-weather-forecast-container">
+                    <!-- Preenchido via script.js -->
+                </div>
+            </div>
+            
+            <!-- Slide 3: Média Diária & Smart Advisor (Split Horizontal) -->
+            <div class="tv-slide" id="tv-slide-3">
+                <div class="tv-slide-header">
+                    <span><i class="fas fa-lightbulb"></i> MÉDIA DIÁRIA & SMART ADVISOR</span>
+                </div>
+                
+                <div class="tv-hero-split">
+                    <!-- Esquerda: Média Diária de Geração -->
+                    <div class="tv-hero-block average-hero">
+                        <span class="tv-hero-label" style="color: #a55eea;"><i class="fas fa-chart-line"></i> MÉDIA DIÁRIA</span>
+                        <strong class="tv-hero-value" id="tv-avg-value" style="color: #a55eea !important; -webkit-text-fill-color: #a55eea !important;">-- <small style="color: #a55eea;">kWh/dia</small></strong>
+                        <div id="tv-avg-days" class="tv-avg-days-sub">baseado em -- dias</div>
+                    </div>
+                    
+                    <!-- Direita: Smart Advisor Suggestions -->
+                    <div class="tv-hero-block advisor-hero">
+                        <span class="tv-hero-label" style="color: #ff9800;"><i class="fas fa-brain"></i> SUGESTÃO SMART ADVISOR</span>
+                        <div class="tv-advisor-inner">
+                            <p id="tv-advisor-text">Analisando dados climáticos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slide 4: Gráfico de Geração Semanal -->
+            <div class="tv-slide" id="tv-slide-4">
+                <div class="tv-slide-header" style="margin-bottom: 5px;">
+                    <span><i class="fas fa-chart-bar"></i> DESEMPENHO DOS ÚLTIMOS DIAS</span>
+                </div>
+                <!-- Container de Gráfico Gigante -->
+                <div class="tv-chart-container-box">
+                    <canvas id="tvEnergyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Indicador de Progresso (Dots) e Timer -->
+        <div class="tv-footer" style="margin-top: 10px;">
+            <div class="tv-progress-bar-wrap">
+                <div id="tv-progress-fill" class="tv-progress-fill"></div>
+            </div>
+            <div class="tv-dots">
+                <span class="tv-dot active" onclick="goToSlide(0)"></span>
+                <span class="tv-dot" onclick="goToSlide(1)"></span>
+                <span class="tv-dot" onclick="goToSlide(2)"></span>
+                <span class="tv-dot" onclick="goToSlide(3)"></span>
             </div>
         </div>
     </div>

@@ -809,3 +809,391 @@ body.dark-mode .advisor-card div div {
     background: rgba(255, 213, 79, 0.08) !important;
 }
 
+/* ========================================================================= */
+/* Kiosk / TV Mode (Apresentador de Painel)                                   */
+/* ========================================================================= */
+.tv-mode-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000000 !important; /* Pure pitch black for maximum legibility from a distance */
+    color: #ffffff !important;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 15px;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+}
+
+body.dark-mode .tv-mode-overlay {
+    background: #000000 !important;
+}
+
+.tv-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    outline: none;
+    z-index: 100000;
+}
+.tv-close-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+}
+
+.tv-slide-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.tv-slide {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 960px; /* Optimized for Moto G3 landscape display */
+    animation: tv-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    height: 100%;
+    padding: 10px 0;
+    box-sizing: border-box;
+}
+.tv-slide.active {
+    display: flex;
+}
+
+@keyframes tv-fade-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.tv-slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #ffd54f; /* High-contrast gold title */
+    text-transform: uppercase;
+}
+
+.tv-status-badge {
+    background: rgba(39, 174, 96, 0.25);
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    color: #2ecc71;
+    padding: 3px 10px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+/* Landscape grid structures to avoid vertical overflow */
+.tv-hero-split {
+    display: flex;
+    width: 100%;
+    gap: 15px;
+    flex: 1;
+    margin: 8px 0;
+    align-items: stretch;
+}
+
+.tv-hero-block {
+    flex: 1;
+    background: #0a0a0a; /* Dark sleek cards */
+    border: 2px solid #222222;
+    border-radius: 16px;
+    padding: 12px 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+}
+
+.tv-hero-block.prod-hero {
+    border-color: rgba(255, 213, 79, 0.4); /* Highlight borders */
+}
+
+.tv-hero-block.watts-hero {
+    border-color: rgba(39, 174, 96, 0.4);
+}
+
+.tv-hero-block.average-hero {
+    border-color: rgba(165, 94, 234, 0.4);
+}
+
+.tv-hero-block.advisor-hero {
+    border-color: rgba(243, 156, 18, 0.4);
+    align-items: flex-start;
+    padding: 15px 20px;
+}
+
+.tv-hero-label {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tv-hero-value {
+    font-size: 5.5rem; /* Massive responsive typography for Moto G3 viewing */
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -2px;
+    font-family: 'Courier New', monospace;
+    color: #ffffff !important;
+    background: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+.tv-hero-value small {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-left: 2px;
+    color: #ffd54f !important;
+    -webkit-text-fill-color: #ffd54f !important;
+}
+
+.tv-row-metrics {
+    display: flex;
+    width: 100%;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.tv-metric-card {
+    flex: 1;
+    background: #0a0a0a;
+    border: 2px solid #222222;
+    border-radius: 12px;
+    padding: 8px 12px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.tv-metric-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.tv-metric-card strong {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.tv-metric-card strong small {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+}
+
+/* Power gauge box in high-contrast */
+.tv-gauge-box {
+    width: 100%;
+    background: #0a0a0a;
+    border: 2px solid #222222;
+    border-radius: 12px;
+    padding: 10px 15px;
+    box-sizing: border-box;
+}
+
+.tv-gauge-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.tv-gauge-info strong {
+    color: #ffffff;
+}
+
+.tv-gauge-bar {
+    height: 12px;
+    background: #222222;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+    border: 1px solid #333333;
+}
+
+.tv-gauge-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #2ecc71, #ffeb3b, #e74c3c);
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Advisor styles */
+.tv-advisor-inner {
+    width: 100%;
+    text-align: left;
+    margin-top: 5px;
+    overflow-y: auto;
+    max-height: 110px; /* Safe bounds to avoid overflow */
+}
+
+.tv-advisor-inner p {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.tv-avg-days-sub {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-top: 6px;
+    font-weight: 700;
+}
+
+/* Scaling of copied weather forecast cards in TV Mode Slide 2 */
+.tv-weather-forecast-container {
+    width: 100%;
+    display: flex;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-top: 15px !important;
+    overflow: hidden !important;
+}
+
+.tv-weather-forecast-container > div {
+    flex: 1 !important;
+    max-width: 110px !important;
+    height: 175px !important;
+    padding: 12px 6px !important;
+    border-radius: 16px !important;
+    background: #0a0a0a !important;
+    border: 2px solid #222222 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+}
+
+.tv-weather-forecast-container i {
+    font-size: 3.2rem !important; /* Enormous high contrast weather icons */
+    margin: 8px 0 !important;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+}
+
+.tv-weather-forecast-container div {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+}
+
+.tv-weather-forecast-container .weather-gen-badge {
+    font-size: 0.85rem !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    margin-top: 6px !important;
+    background: rgba(255, 213, 79, 0.15) !important;
+    border-color: rgba(255, 213, 79, 0.3) !important;
+    color: #ffd54f !important;
+    font-weight: 900 !important;
+}
+
+/* TV Slide 4 Chart adjustments */
+.tv-chart-container-box {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 110px);
+}
+
+.tv-footer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.tv-progress-bar-wrap {
+    width: 100%;
+    max-width: 250px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.tv-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #3498db;
+    border-radius: 2px;
+}
+
+.tv-dots {
+    display: flex;
+    gap: 12px;
+}
+.tv-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+}
+.tv-dot.active {
+    background: #ffd54f;
+    transform: scale(1.3);
+}
+
+/* Media query to scale up font size on larger landscape screens */
+@media (min-width: 800px) {
+    .tv-hero-value {
+        font-size: 6.8rem;
+    }
+    .tv-weather-forecast-container > div {
+        max-width: 120px !important;
+        height: 190px !important;
+    }
+}
+
