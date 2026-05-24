@@ -1,5 +1,5 @@
 // Item 3 & 9: Cache offline + versionamento automático
-const CACHE_NAME = 'solar-monitor-v24';
+const CACHE_NAME = 'solar-monitor-v25';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
