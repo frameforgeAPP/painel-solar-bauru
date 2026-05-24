@@ -60,6 +60,7 @@
                         <span class="label">Geração</span>
                         <span class="value skeleton" id="val-production">0.00 <small>kWh</small></span>
                         <span class="sub-value skeleton" id="val-watts">0 <small>W</small></span>
+                        <span id="val-hsp" style="font-size: 0.58rem; font-weight: bold; color: var(--success); margin-top: 3px; display: block;">-- HSP</span>
                     </div>
                     <div class="flow-arrow"><i class="fas fa-chevron-right"></i></div>
                     <div class="node home">
@@ -87,12 +88,33 @@
                         <div class="power-gauge-fill" id="gauge-fill"></div>
                     </div>
                     <div class="power-gauge-footer">
-                        <span>0 W</span>
+                        <span id="gauge-current">0 W</span>
                         <span id="gauge-max">-- W máx.</span>
                     </div>
+                    <!-- Estatísticas de Potência do Dia -->
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-light); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--bg); gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                            <i class="fas fa-chart-pie" style="color: #9b59b6;"></i> Média: <strong id="gauge-avg-day" style="color: var(--text);">-- W</strong>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                            <i class="fas fa-bolt" style="color: #f1c40f;"></i> Efic: <strong id="gauge-efficiency" style="color: var(--text);">--%</strong>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                            <i class="fas fa-arrow-up" style="color: #e74c3c;"></i> Pico: <strong id="gauge-peak-day" style="color: var(--text);">-- W</strong> <span id="gauge-peak-time" style="font-size: 0.55rem;">(--:--)</span>
+                        </div>
+                    </div>
+                    <!-- Abas do Gráfico de Potência Instantânea do Dia -->
+                    <div class="chart-tabs" style="justify-content: flex-start; margin-top: 15px; border-bottom: none;">
+                        <button id="tab-power-btn" class="tab-btn active" onclick="switchInstantChartTab('power')"><i class="fas fa-bolt"></i> Potência</button>
+                        <button id="tab-temp-btn" class="tab-btn" onclick="switchInstantChartTab('temp')"><i class="fas fa-thermometer-half"></i> Temperatura</button>
+                    </div>
                     <!-- Gráfico de Potência Instantânea do Dia -->
-                    <div id="power-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 15px; display: none;">
+                    <div id="power-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 5px; display: none;">
                         <canvas id="powerInstantChart"></canvas>
+                    </div>
+                    <!-- Gráfico de Temperatura Instantânea do Dia -->
+                    <div id="temp-chart-container" style="position: relative; height: 110px; width: 100%; margin-top: 5px; display: none;">
+                        <canvas id="tempInstantChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -135,6 +157,31 @@
                     <div style="text-align: right;">
                         <span class="value skeleton" id="val-avg-day" style="font-size: 0.95rem; color: #9b59b6;">-- <small>kWh/dia</small></span>
                         <span id="val-avg-days" style="display: block; font-size: 0.6rem; color: var(--text-light);">baseado em -- dias</span>
+                    </div>
+                </div>
+
+                <!-- Recordes Históricos Colapsáveis -->
+                <div class="records-toggle" onclick="toggleRecords()" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 10px; padding: 9px 14px; margin-top: 8px; cursor: pointer; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 7px;">
+                        <i class="fas fa-trophy" style="color: #f1c40f; font-size: 0.9rem;"></i>
+                        <span style="font-size: 0.68rem; font-weight: bold; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.4px;">🏆 Recordes do Sistema</span>
+                    </div>
+                    <i id="records-chevron" class="fas fa-chevron-down" style="color:var(--text-light); font-size:0.8rem; transition:transform 0.3s;"></i>
+                </div>
+                <div id="records-details" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease; background: var(--bg); border-radius: 10px; margin-top: 4px;">
+                    <div style="padding: 10px 14px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; border-left: 3px solid #f1c40f;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: var(--text-light);">⚡ Pico de Potência</span>
+                            <span style="font-weight:bold;" id="record-watts">-- W</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: var(--text-light);">☀️ Maior Geração Diária</span>
+                            <span style="font-weight:bold; color: var(--success);" id="record-yield">-- kWh</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: var(--text-light);">💰 Maior Economia Diária</span>
+                            <span style="font-weight:bold; color: var(--success);" id="record-savings">R$ --,--</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -370,9 +417,22 @@
                     </div>
                 </div>
             </div>
+            <!-- CONSELHEIRO INTELIGENTE (SMART ADVISOR) -->
+            <div class="card advisor-card" id="advisor-card" style="margin-top: 12px; border-left: 4px solid #f39c12; background: linear-gradient(135deg, var(--card-bg), rgba(243,156,18,0.03)); transition: all 0.3s ease;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <div style="background: rgba(243,156,18,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-lightbulb" style="color: #f39c12; font-size: 1rem;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 3px 0; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text);">Smart Advisor</h4>
+                        <p id="advisor-text" style="margin: 0; font-size: 0.7rem; color: var(--text-light); line-height: 1.4;">Analisando dados climáticos e de saldo do ciclo para gerar sugestões...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- FOOTER DE VERSÃO -->
             <div style="text-align: center; font-size: 0.6rem; color: var(--text-light); margin: 24px 0 12px; opacity: 0.7; font-weight: 500;">
-                Solar Monitor Pro · Versão Beta 1.4
+                Solar Monitor Pro · Versão Beta 1.5
             </div>
         </div>
     </div>

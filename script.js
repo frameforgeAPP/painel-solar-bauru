@@ -68,6 +68,115 @@ function toggleTheme() {
     }
 }
 
+function toggleRecords() {
+    const details = document.getElementById('records-details');
+    const chevron = document.getElementById('records-chevron');
+    if (!details) return;
+    const isOpen = details.style.maxHeight !== '0px' && details.style.maxHeight !== '';
+    details.style.maxHeight = isOpen ? '0px' : '200px';
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function calculateAllTimeRecords() {
+    let maxWatts = parseFloat(localStorage.getItem('rec_watts')) || 0;
+    let maxYield = parseFloat(localStorage.getItem('rec_yield')) || 0;
+    
+    // Varre o histórico do Firestore para importar recordes históricos de forma retroativa
+    state.history.forEach(h => {
+        const y = Number(h.production) || 0;
+        const w = Number(h.watts) || 0;
+        if (y > maxYield) maxYield = y;
+        if (w > maxWatts) maxWatts = w;
+    });
+    
+    // Compara também com a geração em tempo real de hoje
+    if (state.productionToday > maxYield) maxYield = state.productionToday;
+    if (state.wattsNow > maxWatts) maxWatts = state.wattsNow;
+    
+    // Salva no localStorage
+    localStorage.setItem('rec_watts', maxWatts);
+    localStorage.setItem('rec_yield', maxYield);
+    
+    // Atualiza na tela
+    const recWattsEl = document.getElementById('record-watts');
+    const recYieldEl = document.getElementById('record-yield');
+    const recSavingsEl = document.getElementById('record-savings');
+    
+    if (recWattsEl) recWattsEl.textContent = `${maxWatts.toLocaleString('pt-BR')} W`;
+    if (recYieldEl) recYieldEl.textContent = `${maxYield.toFixed(2)} kWh`;
+    if (recSavingsEl) {
+        const maxSavings = maxYield * TARIFF;
+        recSavingsEl.textContent = `R$ ${maxSavings.toFixed(2).replace('.', ',')}`;
+    }
+}
+
+function updateSmartAdvisor() {
+    const advEl = document.getElementById('advisor-text');
+    if (!advEl) return;
+    
+    let message = "Seu sistema está operando perfeitamente. Continue aproveitando a energia do sol!";
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // 1. Calcula o saldo do ciclo atual a partir do histórico disponível
+    let netReal = 0;
+    if (state.history.length > 0) {
+        const dateToMs = d => d.includes('/') ? new Date(d.split('/').reverse().join('-') + 'T00:00:00').getTime() : new Date(d + 'T00:00:00').getTime();
+        const sorted = [...state.history].sort((a, b) => dateToMs(a.date) - dateToMs(b.date));
+        
+        const cycleStartMs = new Date('2026-05-12T00:00:00').getTime();
+        const startRecord = sorted.reduce((best, h) => {
+            const ms = dateToMs(h.date);
+            if (ms <= cycleStartMs) {
+                if (!best || ms > dateToMs(best.date)) return h;
+            }
+            return best;
+        }, null);
+        const latestRecord = sorted[sorted.length - 1];
+        
+        if (startRecord && latestRecord) {
+            const dImp = Math.max(0, Number(latestRecord.import) - Number(startRecord.import));
+            const dExp = Math.max(0, Number(latestRecord.export) - Number(startRecord.export));
+            netReal = dExp - dImp; // Saldo de créditos reais acumulados
+        }
+    }
+    
+    // Clima de amanhã
+    let tomorrowCode = 0;
+    let tomorrowMaxT = 25;
+    if (lastWeatherData && lastWeatherData.daily) {
+        tomorrowCode = lastWeatherData.daily.weathercode[1] !== undefined ? lastWeatherData.daily.weathercode[1] : 0;
+        tomorrowMaxT = lastWeatherData.daily.temperature_2m_max[1] !== undefined ? lastWeatherData.daily.temperature_2m_max[1] : 25;
+    }
+    
+    const isCloudyOrRainy = tomorrowCode === 3 || (tomorrowCode >= 51 && tomorrowCode <= 82) || tomorrowCode >= 95;
+    
+    // Lógica de regras inteligentes
+    if (hour >= 6 && hour <= 16) {
+        // Período diurno de geração
+        if (state.wattsNow > 3000) {
+            message = `Geração a todo vapor agora (${state.wattsNow} W)! Excelente momento para ligar aparelhos pesados como máquina de lavar ou forno elétrico.`;
+        } else if (state.wattsNow > 1000) {
+            message = `Produção solar moderada (${state.wattsNow} W). Sua casa está consumindo energia limpa e reduzindo custos.`;
+        } else {
+            message = `Geração solar baixa devido à inclinação solar ou nuvens. Evite acumular muitas cargas de alto consumo neste momento.`;
+        }
+    } else {
+        // Fim de tarde ou noite
+        if (isCloudyOrRainy) {
+            message = `Amanhã a previsão indica tempo nublado/chuvoso. A geração será menor. Se puder, economize hoje à noite.`;
+        } else if (netReal > 20) {
+            message = `Você possui um excelente saldo de créditos acumulados no ciclo (+${netReal.toFixed(0)} kWh). Pode usar o ar-condicionado à noite com tranquilidade!`;
+        } else if (netReal < 0) {
+            message = `Seu consumo de rede está superando a exportação solar neste ciclo. Considere moderar o uso de aparelhos de alto consumo no período noturno.`;
+        } else {
+            message = `Fim do dia de geração. Amanhã teremos sol limpo previsto (${tomorrowMaxT}°C) — aproveite para programar suas tarefas domésticas no período diurno!`;
+        }
+    }
+    
+    advEl.textContent = message;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
@@ -92,6 +201,7 @@ function switchChartTab(tab) {
     }
 }
 let historyChart = null;
+let lastWeatherData = null; // Armazena dados de clima globalmente
 
 function switchInverterTab(tab) {
     const listBtn = document.getElementById('inv-tab-list-btn');
@@ -257,7 +367,7 @@ async function syncSolaxOnly() {
 
     // Salva a leitura atual no histórico de potência instantânea de hoje
     if (successCount === DEVICES.length) {
-        storeInstantPowerReading(totalWatts, state.invDetails.map(inv => inv.watts));
+        storeInstantPowerReading(totalWatts, state.invDetails.map(inv => inv.watts), state.invDetails.map(inv => inv.temp));
     }
 
     if (totalWatts > 0 || totalYield > 0) {
@@ -309,11 +419,13 @@ async function syncData() {
         production: prodToSave,
         watts: state.wattsNow || 0,
         inverterWatts: state.invDetails.map(inv => Number(inv.watts) || 0),
+        inverterTemps: state.invDetails.map(inv => Number(inv.temp) || 0),
         inverters: state.invDetails.map(inv => ({
             sn: inv.sn,
             name: inv.name,
             watts: Number(inv.watts) || 0,
-            production: Number(inv.yield) || 0
+            production: Number(inv.yield) || 0,
+            temp: Number(inv.temp) || 0
         }))
     };
 
@@ -401,6 +513,18 @@ function updateDashboardUI() {
     const prod = Number(state.productionToday || 0);
     document.getElementById('val-production').innerHTML = `${prod.toFixed(2)} <small>kWh</small>`;
     document.getElementById('val-watts').innerHTML = `${state.wattsNow || 0} <small>W</small>`;
+    
+    // Atualiza Horas de Sol Pleno (HSP)
+    const hsp = prod / (MAX_POWER_W / 1000);
+    const hspEl = document.getElementById('val-hsp');
+    if (hspEl) {
+        let label = "Baixo";
+        let color = "#e74c3c";
+        if (hsp >= 4.2) { label = "Excepcional"; color = "#27ae60"; }
+        else if (hsp >= 3.0) { label = "Excelente"; color = "#2980b9"; }
+        else if (hsp >= 1.5) { label = "Normal"; color = "#f39c12"; }
+        hspEl.innerHTML = `☀️ ${hsp.toFixed(2)} HSP <span style="font-size: 0.52rem; font-weight: 700; background: ${color}18; color: ${color}; padding: 1px 4px; border-radius: 4px; margin-left: 2px;">${label}</span>`;
+    }
 
     const liveImp = parseFloat(document.getElementById('import').value) || 0;
     const liveExp = parseFloat(document.getElementById('export').value) || 0;
@@ -482,12 +606,15 @@ function updateDashboardUI() {
     
     // Novo: Atualiza o gráfico de linhas da potência instantânea de hoje
     renderPowerInstantChart();
+    renderTempInstantChart();
     const invChartBtn = document.getElementById('inv-tab-chart-btn');
     if (invChartBtn && invChartBtn.classList.contains('active')) {
         renderInverterPowerChart();
     }
 
     document.getElementById('update-time').innerText = "Atualizado: " + new Date().toLocaleTimeString();
+    calculateAllTimeRecords();
+    updateSmartAdvisor();
     renderChart();
 }
 
@@ -1134,7 +1261,7 @@ function updatePowerGauge() {
     const fill = document.getElementById('gauge-fill');
     const pctEl = document.getElementById('gauge-percent');
     const maxEl = document.getElementById('gauge-max');
-    const footerLeft = document.querySelector('.power-gauge-footer span:first-child');
+    const currentEl = document.getElementById('gauge-current');
 
     if (fill) {
         fill.style.width = pct + '%';
@@ -1145,7 +1272,46 @@ function updatePowerGauge() {
     }
     if (pctEl) pctEl.textContent = pct + '%';
     if (maxEl) maxEl.textContent = `${MAX_POWER_W.toLocaleString('pt-BR')} W máx.`;
-    if (footerLeft) footerLeft.textContent = `${watts.toLocaleString('pt-BR')} W`;
+    if (currentEl) currentEl.textContent = `${watts.toLocaleString('pt-BR')} W`;
+    
+    // Atualiza Eficiência Real CC/CA %
+    const efficiency = ((watts / MAX_POWER_W) * 100).toFixed(1);
+    const effEl = document.getElementById('gauge-efficiency');
+    if (effEl) effEl.textContent = `${efficiency}%`;
+
+    updateDailyPowerStats();
+}
+
+function updateDailyPowerStats() {
+    const dataPoints = getMergedPowerHistory();
+    const avgEl = document.getElementById('gauge-avg-day');
+    const peakEl = document.getElementById('gauge-peak-day');
+    const peakTimeEl = document.getElementById('gauge-peak-time');
+
+    if (!dataPoints || dataPoints.length === 0) {
+        if (avgEl) avgEl.textContent = '-- W';
+        if (peakEl) peakEl.textContent = '-- W';
+        if (peakTimeEl) peakTimeEl.textContent = '(--:--)';
+        return;
+    }
+
+    let sum = 0;
+    let max = 0;
+    let maxTime = '--:--';
+
+    dataPoints.forEach(pt => {
+        sum += pt.watts;
+        if (pt.watts >= max) {
+            max = pt.watts;
+            maxTime = pt.time;
+        }
+    });
+
+    const avg = Math.round(sum / dataPoints.length);
+
+    if (avgEl) avgEl.textContent = `${avg.toLocaleString('pt-BR')} W`;
+    if (peakEl) peakEl.textContent = `${max.toLocaleString('pt-BR')} W`;
+    if (peakTimeEl) peakTimeEl.textContent = `(${maxTime})`;
 }
 
 // Item 4: Painel de configurações colapsável
@@ -1348,6 +1514,7 @@ async function fetchWeather() {
     try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo');
         const data = await res.json();
+        lastWeatherData = data; // Armazena dados de clima globalmente
         
         const weatherCodes = {
             0: { icon: "fa-sun", color: "#f1c40f" },
@@ -1385,17 +1552,35 @@ async function fetchWeather() {
             const code = data.daily.weathercode[i];
             const weather = weatherCodes[code] || { icon: "fa-cloud", color: "#95a5a6" };
             
+            // Estimativa de geração solar com base no clima
+            let weatherFactor = 0.5;
+            if (code === 0 || code === 1) weatherFactor = 1.0;
+            else if (code === 2) weatherFactor = 0.88;
+            else if (code === 3) weatherFactor = 0.55;
+            else if (code >= 45 && code <= 48) weatherFactor = 0.45;
+            else if (code >= 51 && code <= 55) weatherFactor = 0.35;
+            else if (code >= 61 && code <= 65) weatherFactor = 0.22;
+            else if (code >= 80 && code <= 82) weatherFactor = 0.28;
+            else if (code >= 95) weatherFactor = 0.15;
+            
+            const tempFactor = 1 - (maxT - 25) * 0.0035;
+            const estimatedGen = Math.max(0, 4.96 * 4.35 * weatherFactor * tempFactor);
+            
             html += `
-                <div style="flex: 1; min-width: 45px; text-align: center; background: var(--bg); padding: 5px 0; border-radius: 6px; line-height: 1.1;">
+                <div style="flex: 1; min-width: 52px; text-align: center; background: var(--bg); padding: 5px 2px; border-radius: 6px; line-height: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 95px;">
                     <div style="font-size: 0.6rem; font-weight: bold; text-transform: uppercase;">${dayName}</div>
                     <i class="fas ${weather.icon}" style="font-size: 1.1rem; color: ${weather.color}; margin: 2px 0;"></i>
-                    <div style="font-size: 0.7rem; font-weight: bold;">${maxT}°</div>
-                    <div style="font-size: 0.55rem; color: var(--text-light);">${minT}°</div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: bold;">${maxT}°</div>
+                        <div style="font-size: 0.55rem; color: var(--text-light);">${minT}°</div>
+                    </div>
+                    <span class="weather-gen-badge">${estimatedGen.toFixed(1)}k</span>
                 </div>
             `;
         }
         container.innerHTML = html;
         container.style.display = 'flex';
+        updateSmartAdvisor(); // Atualiza sugestões inteligentes após carregar o clima
     } catch(e) {
         console.warn("Erro ao buscar previsao do tempo:", e);
     }
@@ -1406,8 +1591,26 @@ setTimeout(fetchWeather, 500);
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('[SW] Registrado com sucesso:', reg.scope))
+            .then(reg => {
+                console.log('[SW] Registrado com sucesso:', reg.scope);
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            })
             .catch(err => console.error('[SW] Erro ao registrar:', err));
+    });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+        }
     });
 }
 
@@ -1415,7 +1618,7 @@ if ('serviceWorker' in navigator) {
 /* Lógica do Gráfico de Potência Instantânea de Hoje (Rolagem e Cache) */
 // =========================================================================
 
-function storeInstantPowerReading(watts, inverterWatts = []) {
+function storeInstantPowerReading(watts, inverterWatts = [], inverterTemps = []) {
     const todayStr = new Date().toLocaleDateString('pt-BR');
     let powerHistory = JSON.parse(localStorage.getItem('power_instant_history'));
     
@@ -1434,12 +1637,14 @@ function storeInstantPowerReading(watts, inverterWatts = []) {
     if (lastPoint && (nowTimestamp - lastPoint.timestamp < 60000)) {
         lastPoint.watts = watts;
         lastPoint.inverterWatts = inverterWatts.map(v => Number(v) || 0);
+        lastPoint.inverterTemps = inverterTemps.map(v => Number(v) || 0);
         lastPoint.timestamp = nowTimestamp;
     } else {
         powerHistory.data.push({
             time: timeStr,
             watts: watts,
             inverterWatts: inverterWatts.map(v => Number(v) || 0),
+            inverterTemps: inverterTemps.map(v => Number(v) || 0),
             timestamp: nowTimestamp
         });
     }
@@ -1491,6 +1696,7 @@ function getMergedPowerHistory() {
                     time: timeStr,
                     watts: Number(item.watts) || 0,
                     inverterWatts: getInverterWattsFromReading(item),
+                    inverterTemps: Array.isArray(item.inverterTemps) ? item.inverterTemps.map(v => Number(v) || 0) : [],
                     timestamp: dateObj.getTime()
                 });
             }
@@ -1500,6 +1706,119 @@ function getMergedPowerHistory() {
     // Ordena por ordem cronológica de timestamp
     mergedPoints.sort((a, b) => a.timestamp - b.timestamp);
     return mergedPoints;
+}
+
+function switchInstantChartTab(tab) {
+    const powerBtn = document.getElementById('tab-power-btn');
+    const tempBtn = document.getElementById('tab-temp-btn');
+    const powerContainer = document.getElementById('power-chart-container');
+    const tempContainer = document.getElementById('temp-chart-container');
+
+    if (!powerBtn || !tempBtn || !powerContainer || !tempContainer) return;
+
+    if (tab === 'power') {
+        powerBtn.classList.add('active');
+        tempBtn.classList.remove('active');
+        powerContainer.style.display = 'block';
+        tempContainer.style.display = 'none';
+        if (powerInstantChartInstance) powerInstantChartInstance.update();
+    } else {
+        powerBtn.classList.remove('active');
+        tempBtn.classList.add('active');
+        powerContainer.style.display = 'none';
+        tempContainer.style.display = 'block';
+        renderTempInstantChart();
+    }
+}
+
+let tempInstantChartInstance = null;
+function renderTempInstantChart() {
+    const canvas = document.getElementById('tempInstantChart');
+    if (!canvas) return;
+    
+    const container = document.getElementById('temp-chart-container');
+    const dataPoints = getMergedPowerHistory();
+    
+    const validData = dataPoints.filter(pt => pt.inverterTemps && pt.inverterTemps.length > 0 && pt.inverterTemps[0] > 0);
+    
+    if (validData.length === 0) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+    
+    const tempBtn = document.getElementById('tab-temp-btn');
+    if (tempBtn && tempBtn.classList.contains('active')) {
+        if (container) container.style.display = 'block';
+    }
+    
+    const labels = validData.map(pt => pt.time);
+    const temp1Data = validData.map(pt => pt.inverterTemps[0] || 0);
+    const temp2Data = validData.map(pt => pt.inverterTemps[1] || 0);
+    
+    const ctx = canvas.getContext('2d');
+    if (tempInstantChartInstance) {
+        tempInstantChartInstance.destroy();
+    }
+    
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+    const textColor = isDark ? '#a0a0a0' : '#7f8c8d';
+    
+    tempInstantChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Micro Inv. 1',
+                    data: temp1Data,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: validData.length > 20 ? 0 : 2.5
+                },
+                {
+                    label: 'Micro Inv. 2',
+                    data: temp2Data,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: validData.length > 20 ? 0 : 2.5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 9 }, color: textColor } },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + ' °C';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 5, callback: function(value) { return value + '°C'; } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: textColor, font: { size: 8 }, maxTicksLimit: 6 }
+                }
+            }
+        }
+    });
 }
 
 let powerInstantChartInstance = null;

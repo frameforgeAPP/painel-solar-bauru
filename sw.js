@@ -1,5 +1,5 @@
 // Item 3 & 9: Cache offline + versionamento automático
-const CACHE_NAME = 'solar-monitor-v13';
+const CACHE_NAME = 'solar-monitor-v14';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -34,15 +34,14 @@ self.addEventListener('fetch', (e) => {
     const isLocalAsset = url.origin === self.location.origin;
 
     if (isLocalAsset) {
-        // Estratégia Cache-First para assets locais → funciona 100% offline
+        // Estratégia Network-First para assets locais → garante atualização automática e obrigatória do app
         e.respondWith(
-            caches.match(e.request).then(cached => {
-                if (cached) return cached;
-                return fetch(e.request).then(response => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-                    return response;
-                });
+            fetch(e.request).then(response => {
+                const clone = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+                return response;
+            }).catch(() => {
+                return caches.match(e.request);
             })
         );
     } else {

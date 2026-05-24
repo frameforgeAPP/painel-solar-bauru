@@ -80,18 +80,33 @@ exports.syncSolaxToFirestore = onSchedule({
     let totalWatts = 0;
     let successCount = 0;
 
+    const inverterWatts = [];
+    const inverterTemps = [];
+    const inverters = [];
+
     results.forEach((r, index) => {
         const devName = DEVICES[index].name;
         const devSn = DEVICES[index].sn;
         if (r.status === 'fulfilled' && r.value) {
             const watts = Number(r.value.acpower || r.value.acPower || 0);
             const yDay = Number(r.value.yieldtoday || r.value.yieldToday || 0);
+            const temp = Number(r.value.inverterTemp || 0);
             
             totalYield += yDay;
             totalWatts += watts;
             successCount++;
+
+            inverterWatts.push(watts);
+            inverterTemps.push(temp);
+            inverters.push({
+                sn: devSn,
+                name: devName,
+                watts: watts,
+                production: yDay,
+                temp: temp
+            });
             
-            logger.info(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh`);
+            logger.info(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh | Temp: ${temp}°C`);
         } else {
             const errorMsg = r.status === 'rejected' ? r.reason.message : 'Sem dados válidos';
             logger.error(`[Solax] Falha ao obter dados do Inversor ${index + 1} (${devSn}): ${errorMsg}`);
@@ -142,7 +157,10 @@ exports.syncSolaxToFirestore = onSchedule({
             import: lastImport,
             export: lastExport,
             production: Number(prodToSave.toFixed(2)),
-            watts: totalWatts
+            watts: totalWatts,
+            inverterWatts: inverterWatts,
+            inverterTemps: inverterTemps,
+            inverters: inverters
         };
 
         const docRef = await leiturasCol.add(reading);

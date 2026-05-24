@@ -89,6 +89,7 @@ async function runSync() {
         if (r.status === 'fulfilled' && r.value) {
             const watts = Number(r.value.acpower || r.value.acPower || 0);
             const yDay = Number(r.value.yieldtoday || r.value.yieldToday || 0);
+            const temp = Number(r.value.inverterTemp || 0);
             
             totalYield += yDay;
             totalWatts += watts;
@@ -97,10 +98,11 @@ async function runSync() {
                 sn: devSn,
                 name: devName,
                 watts,
-                production: yDay
+                production: yDay,
+                temp
             };
             
-            console.log(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh`);
+            console.log(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh | Temp: ${temp}°C`);
         } else {
             const errorMsg = r.status === 'rejected' ? r.reason.message : 'Sem dados válidos';
             console.error(`[Solax] Falha ao obter dados do Inversor ${index + 1} (${devSn}): ${errorMsg}`);
@@ -153,6 +155,7 @@ async function runSync() {
             production: Number(prodToSave.toFixed(2)),
             watts: totalWatts,
             inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
+            inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
             inverters: inverterDetails
         };
 

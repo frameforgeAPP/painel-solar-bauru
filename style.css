@@ -766,5 +766,46 @@ body.dark-mode .bill-card {
     .card-savings {
         grid-column: span 3;
     }
+
+    .advisor-card {
+        grid-column: span 12;
+    }
+}
+
+/* ========================================================================= */
+/* Recursos Inteligentes (Recordes, Smart Advisor e Weather Badge)           */
+/* ========================================================================= */
+.weather-gen-badge {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #b58900;
+    background: rgba(241, 196, 15, 0.12);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-top: 4px;
+    border: 1px solid rgba(241, 196, 15, 0.2);
+}
+body.dark-mode .weather-gen-badge {
+    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.1);
+    border-color: rgba(255, 213, 79, 0.15);
+}
+
+.advisor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.1);
+    border-left-color: #e67e22 !important;
+}
+
+body.dark-mode .advisor-card {
+    background: linear-gradient(135deg, var(--card-bg), rgba(255, 213, 79, 0.02)) !important;
+    border-left-color: #ffd54f !important;
+}
+body.dark-mode .advisor-card i {
+    color: #ffd54f !important;
+}
+body.dark-mode .advisor-card div div {
+    background: rgba(255, 213, 79, 0.08) !important;
 }
 
