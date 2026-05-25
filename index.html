@@ -426,7 +426,7 @@
 
             <!-- FOOTER DE VERSÃO -->
             <div style="text-align: center; font-size: 0.6rem; color: var(--text-light); margin: 24px 0 12px; opacity: 0.7; font-weight: 500;">
-                Solar Monitor Pro · Versão Beta 1.6
+                Solar Monitor Pro · Versão Beta 1.8
             </div>
     <!-- MODAL DO APRESENTADOR (MODO TV) -->
     <div id="tv-mode-overlay" class="tv-mode-overlay" style="display: none;">
@@ -492,32 +492,33 @@
                 </div>
             </div>
             
-            <!-- Slide 3: Média Diária & Smart Advisor (Split Horizontal) -->
+            <!-- Slide 3: Média Diária (Tela Única) -->
             <div class="tv-slide" id="tv-slide-3">
                 <div class="tv-slide-header">
-                    <span><i class="fas fa-lightbulb"></i> MÉDIA DIÁRIA & SMART ADVISOR</span>
+                    <span><i class="fas fa-chart-line"></i> MÉDIA DIÁRIA DE GERAÇÃO</span>
                 </div>
-                
-                <div class="tv-hero-split">
-                    <!-- Esquerda: Média Diária de Geração -->
-                    <div class="tv-hero-block average-hero">
-                        <span class="tv-hero-label" style="color: #a55eea;"><i class="fas fa-chart-line"></i> MÉDIA DIÁRIA</span>
-                        <strong class="tv-hero-value" id="tv-avg-value" style="color: #a55eea !important; -webkit-text-fill-color: #a55eea !important;">-- <small style="color: #a55eea;">kWh/dia</small></strong>
-                        <div id="tv-avg-days" class="tv-avg-days-sub">baseado em -- dias</div>
-                    </div>
-                    
-                    <!-- Direita: Smart Advisor Suggestions -->
-                    <div class="tv-hero-block advisor-hero">
-                        <span class="tv-hero-label" style="color: #ff9800;"><i class="fas fa-brain"></i> SUGESTÃO SMART ADVISOR</span>
-                        <div class="tv-advisor-inner">
-                            <p id="tv-advisor-text">Analisando dados climáticos...</p>
-                        </div>
-                    </div>
+                <div class="tv-hero-full average-hero-full">
+                    <span class="tv-hero-label-full" style="color: #a55eea;"><i class="fas fa-chart-line"></i> MÉDIA DIÁRIA</span>
+                    <strong class="tv-hero-value-full" id="tv-avg-value">-- <small>kWh/dia</small></strong>
+                    <div id="tv-avg-days" class="tv-avg-days-sub-full">baseado em -- dias</div>
                 </div>
             </div>
             
-            <!-- Slide 4: Gráfico de Geração Semanal -->
+            <!-- Slide 4: Smart Advisor (Tela Única) -->
             <div class="tv-slide" id="tv-slide-4">
+                <div class="tv-slide-header">
+                    <span><i class="fas fa-brain"></i> SUGESTÃO SMART ADVISOR</span>
+                </div>
+                <div class="tv-hero-full advisor-hero-full">
+                    <span class="tv-hero-label-full" style="color: #ff9800;"><i class="fas fa-brain"></i> SMART ADVISOR</span>
+                    <div class="tv-advisor-inner-full">
+                        <p id="tv-advisor-text">Analisando dados climáticos...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: Gráfico de Geração Semanal -->
+            <div class="tv-slide" id="tv-slide-5">
                 <div class="tv-slide-header" style="margin-bottom: 5px;">
                     <span><i class="fas fa-chart-bar"></i> DESEMPENHO DOS ÚLTIMOS DIAS</span>
                 </div>
@@ -527,12 +528,22 @@
                 </div>
             </div>
 
-            <!-- Slide de Relógio Noturno (Ativo automaticamente das 22h às 06h) -->
+            <!-- Slide 6: Relógio Gigante (Disponível na rotação diurna) -->
+            <div class="tv-slide" id="tv-slide-6">
+                <div class="tv-slide-header">
+                    <span><i class="fas fa-clock"></i> HORA ATUAL</span>
+                </div>
+                <div class="tv-hero-full" style="border-color: rgba(255, 213, 79, 0.15) !important;">
+                    <span class="tv-hero-label-full" style="color: #ffd54f;"><i class="fas fa-clock"></i> HORA ATUAL</span>
+                    <strong class="tv-hero-value-full" id="tv-slide-clock-time" style="font-size: 24vw; text-shadow: 0 0 35px rgba(255, 213, 79, 0.35); color: #ffd54f !important; -webkit-text-fill-color: #ffd54f !important; line-height: 0.9;">00:00</strong>
+                    <div id="tv-slide-clock-date" class="tv-avg-days-sub-full" style="font-size: 4vw; margin-top: 3vh; color: #ffd54f !important;">Domingo, 24 de Maio</div>
+                </div>
+            </div>
+
             <div class="tv-slide" id="tv-slide-night">
                 <div class="tv-night-clock-container">
                     <div class="tv-night-clock-time" id="tv-night-clock-time">00:00:00</div>
                     <div class="tv-night-clock-date" id="tv-night-clock-date">Domingo, 24 de Maio</div>
-                    <div class="tv-night-clock-sub"><i class="fas fa-moon" style="color: #ffd54f;"></i> MODO NOTURNO</div>
                 </div>
             </div>
         </div>
@@ -547,6 +558,8 @@
                 <span class="tv-dot" onclick="goToSlide(1)"></span>
                 <span class="tv-dot" onclick="goToSlide(2)"></span>
                 <span class="tv-dot" onclick="goToSlide(3)"></span>
+                <span class="tv-dot" onclick="goToSlide(4)"></span>
+                <span class="tv-dot" onclick="goToSlide(5)"></span>
             </div>
         </div>
     </div>

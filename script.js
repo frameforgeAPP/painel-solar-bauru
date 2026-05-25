@@ -1604,6 +1604,15 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => {
                 console.log('[SW] Registrado com sucesso:', reg.scope);
+                
+                // Força busca imediata de atualização no carregamento
+                reg.update();
+                
+                // Força verificação de atualização a cada 15 minutos (900.000 ms) para Kiosk/TV
+                setInterval(() => {
+                    reg.update().then(() => console.log('[SW] Verificação periódica de atualização executada.'));
+                }, 900000);
+
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -2019,7 +2028,7 @@ function startTvIntervals() {
         
         if (progress >= 100) {
             progress = 0;
-            currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Rotaciona entre os 4 slides ativos
+            currentTvSlideIndex = (currentTvSlideIndex + 1) % 6; // Rotaciona entre os 6 slides ativos
             showTvSlide(currentTvSlideIndex);
         }
     }, stepTime);
@@ -2067,8 +2076,8 @@ function showTvSlide(index) {
             dot.classList.toggle('active', idx === actualIndex);
         });
         
-        if (actualIndex === 3) {
-            // Renderiza gráfico semanal de desempenho
+        if (actualIndex === 4) {
+            // Renderiza gráfico semanal de desempenho (agora no slide 5 / index 4)
             setTimeout(renderTvEnergyChart, 80);
         }
     } else {
@@ -2325,10 +2334,10 @@ if (tvOverlay) {
             if (currentTvSlideIndex === 'night') {
                 currentTvSlideIndex = 0;
             } else {
-                currentTvSlideIndex = (currentTvSlideIndex + 1) % 4; // Avança entre os 4 normais
+                currentTvSlideIndex = (currentTvSlideIndex + 1) % 6; // Avança entre os 6 normais
             }
         } else {
-            currentTvSlideIndex = (currentTvSlideIndex === 'night' ? 0 : (currentTvSlideIndex + 1) % 4);
+            currentTvSlideIndex = (currentTvSlideIndex === 'night' ? 0 : (currentTvSlideIndex + 1) % 6);
         }
         goToSlide(currentTvSlideIndex);
     });
@@ -2337,12 +2346,22 @@ if (tvOverlay) {
 function updateTvClockTime() {
     const timeEl = document.getElementById('tv-night-clock-time');
     const dateEl = document.getElementById('tv-night-clock-date');
-    if (!timeEl) return;
+    const slideTimeEl = document.getElementById('tv-slide-clock-time');
+    const slideDateEl = document.getElementById('tv-slide-clock-date');
+    if (!timeEl && !slideTimeEl) return;
     
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    // Somente Hora e Minuto
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
-    timeEl.textContent = timeStr;
-    if (dateEl) dateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    // Somente Dia da Semana e Dia do Mês (ex: Segunda-feira, 25)
+    let weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' });
+    weekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    const day = now.getDate();
+    const dateStr = `${weekday}, ${day}`;
+    
+    if (timeEl) timeEl.textContent = timeStr;
+    if (dateEl) dateEl.textContent = dateStr;
+    if (slideTimeEl) slideTimeEl.textContent = timeStr;
+    if (slideDateEl) slideDateEl.textContent = dateStr;
 }

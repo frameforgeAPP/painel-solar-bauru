@@ -1513,26 +1513,219 @@ body.dark-mode .tv-mode-overlay {
     font-weight: 600;
     margin-top: 15px; /* Fallback */
     margin-top: 2vh;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.tv-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3498db, #ffd54f) !important;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.8), 0 0 15px rgba(255, 213, 79, 0.5) !important;
+}
+
+.tv-dots {
+    display: -webkit-flex;
+    display: flex;
+    gap: 10px; /* Fallback */
+    gap: 1.5vw;
+}
+.tv-dot {
+    width: 9px; /* Fallback */
+    height: 9px; /* Fallback */
+    width: 1.2vw;
+    height: 1.2vw;
+    min-width: 8px;
+    min-height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+.tv-dot.active {
+    background: linear-gradient(135deg, #ffd54f, #ff9800) !important;
+    box-shadow: 0 0 10px rgba(255, 213, 79, 0.8) !important;
+    transform: scale(1.3);
+}
+
+/* ADAPTAÇÕES PARA MODO RETRATO E CELULARES DE RESOLUÇÃO REDUZIDA */
+@media (orientation: portrait), (max-width: 600px) {
+    .tv-slide-header {
+        font-size: 16px; /* Fallback */
+        font-size: 4vw;
+        margin-bottom: 12px;
+    }
+    .tv-status-badge {
+        font-size: 11px; /* Fallback */
+        font-size: 3vw;
+        padding: 2px 6px;
+    }
+    .tv-hero-split {
+        -webkit-flex-direction: column;
+        flex-direction: column; /* Stack vertical */
+        gap: 12px;
+    }
+    .tv-hero-block {
+        padding: 20px 10px;
+    }
+    .tv-hero-label {
+        font-size: 14px; /* Fallback */
+        font-size: 4vw;
+        margin-bottom: 8px;
+        gap: 6px;
+    }
+    .tv-hero-value {
+        font-size: 56px; /* Fallback */
+        font-size: 15vw; /* Valores gigantes */
+    }
+    .tv-hero-value small {
+        font-size: 18px; /* Fallback */
+        font-size: 5vw;
+    }
+    .tv-row-metrics {
+        gap: 8px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+    }
+    .tv-metric-card {
+        padding: 10px 6px;
+    }
+    .tv-metric-label {
+        font-size: 11px; /* Fallback */
+        font-size: 3vw;
+        margin-bottom: 4px;
+    }
+    .tv-metric-card strong {
+        font-size: 24px; /* Fallback */
+        font-size: 6.5vw;
+    }
+    .tv-metric-card strong small {
+        font-size: 11px; /* Fallback */
+        font-size: 3vw;
+    }
+    .tv-gauge-box {
+        padding: 12px 10px;
+    }
+    .tv-gauge-info {
+        font-size: 13px; /* Fallback */
+        font-size: 3.5vw;
+        margin-bottom: 8px;
+    }
+    .tv-gauge-bar {
+        height: 12px;
+    }
+    .tv-avg-days-sub {
+        font-size: 11px; /* Fallback */
+        font-size: 3vw;
+        margin-top: 8px;
+    }
+    .tv-advisor-inner {
+        max-height: 150px;
+        margin-top: 8px;
+    }
+    .tv-advisor-inner p {
+        font-size: 14px; /* Fallback */
+        font-size: 4vw;
+    }
+    .tv-weather-forecast-container {
+        -webkit-flex-wrap: wrap;
+        flex-wrap: wrap; /* Facilita quebra de clima em celular vertical */
+        gap: 8px !important;
+        margin-top: 15px !important;
+        -webkit-justify-content: center !important;
+        justify-content: center !important;
+    }
+    .tv-weather-forecast-container > div {
+        -webkit-flex: none !important;
+        flex: none !important;
+        width: 28% !important; /* Grade de 3 colunas fluida em celulares em pé */
+        height: 120px !important;
+        padding: 6px !important;
+    }
+    .tv-weather-forecast-container i {
+        font-size: 28px !important;
+        margin: 4px 0 !important;
+    }
+    .tv-weather-forecast-container div {
+        font-size: 12px !important;
+    }
+    .tv-weather-forecast-container .weather-gen-badge {
+        font-size: 10px !important;
+        padding: 1px 4px !important;
+        margin-top: 4px !important;
+    }
+    .tv-chart-container-box {
+        height: 55vh;
+    }
+    .tv-dots {
+        gap: 15px;
+    }
+    .tv-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Estilos para o Relógio Noturno do Modo TV (Ativo das 22h às 06h) */
+.tv-night-clock-container {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-justify-content: center;
+    justify-content: center;
+    -webkit-align-items: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+.tv-night-clock-time {
+    font-size: 120px; /* Fallback para Android antigo */
+    font-size: 32vw; /* Tamanho colossal para apenas HH:MM */
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    color: #ffd54f !important;
+    opacity: 0.20; /* Brilho no mínimo (20% opacidade) */
+    letter-spacing: -4px;
+    line-height: 0.9;
+    text-shadow: none !important; /* Sem emissão de brilho na tela */
+}
+
+.tv-night-clock-date {
+    font-size: 20px; /* Fallback */
+    font-size: 4vw;
+    color: #ffd54f !important;
+    opacity: 0.18; /* Brilho no mínimo */
+    font-weight: 600;
+    margin-top: 15px; /* Fallback */
+    margin-top: 2vh;
     margin-bottom: 15px; /* Fallback */
     margin-bottom: 2vh;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    text-shadow: none !important;
 }
 
 .tv-night-clock-sub {
     font-size: 14px; /* Fallback */
     font-size: 2vw;
-    color: #94a3b8;
+    color: #ffd54f !important;
+    opacity: 0.15; /* Brilho no mínimo */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    text-shadow: none !important;
 }
 
 /* Ajustes responsivos para retrato em celulares no relógio noturno */
 @media (orientation: portrait), (max-width: 600px) {
     .tv-night-clock-time {
-        font-size: 56px; /* Fallback */
-        font-size: 16vw;
+        font-size: 80px; /* Fallback */
+        font-size: 32vw;
     }
     .tv-night-clock-date {
         font-size: 16px; /* Fallback */
@@ -1543,5 +1736,119 @@ body.dark-mode .tv-mode-overlay {
     .tv-night-clock-sub {
         font-size: 11px; /* Fallback */
         font-size: 3vw;
+    }
+}
+
+/* Custom Styles for huge TV mode slides (Média Diária and Smart Advisor) */
+.tv-hero-full {
+    -webkit-flex: 1;
+    flex: 1;
+    width: 100%;
+    background: rgba(10, 10, 12, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 4vh 4vw;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-justify-content: center;
+    justify-content: center;
+    -webkit-align-items: center;
+    align-items: center;
+    box-sizing: border-box;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8) !important;
+    margin: 2vh 0;
+    transition: border-color 0.3s;
+}
+
+.tv-hero-full.average-hero-full {
+    border-color: rgba(165, 94, 234, 0.3) !important;
+}
+
+.tv-hero-full.advisor-hero-full {
+    border-color: rgba(243, 156, 18, 0.3) !important;
+}
+
+.tv-hero-label-full {
+    font-size: 2.2vw;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 3vh;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.tv-hero-value-full {
+    font-size: 14vw;
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -3px;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    color: #ffffff !important;
+    text-shadow: 0 0 40px rgba(165, 94, 234, 0.5);
+}
+
+.tv-hero-value-full small {
+    font-size: 4vw;
+    font-weight: 800;
+    margin-left: 5px;
+    color: #ffd54f !important;
+}
+
+.tv-avg-days-sub-full {
+    font-size: 2vw;
+    color: #94a3b8;
+    margin-top: 4vh;
+    font-weight: 700;
+}
+
+.tv-advisor-inner-full {
+    width: 100%;
+    text-align: center;
+    margin-top: 2vh;
+    max-height: 45vh;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tv-advisor-inner-full p {
+    margin: 0;
+    font-size: 3.5vw;
+    line-height: 1.45;
+    color: #e2e8f0;
+    font-weight: 600;
+    max-width: 90%;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+@media (orientation: portrait), (max-width: 600px) {
+    .tv-hero-label-full {
+        font-size: 5vw;
+        margin-bottom: 2vh;
+    }
+    .tv-hero-value-full {
+        font-size: 18vw;
+    }
+    .tv-hero-value-full small {
+        font-size: 6vw;
+    }
+    .tv-avg-days-sub-full {
+        font-size: 4vw;
+        margin-top: 2vh;
+    }
+    .tv-advisor-inner-full p {
+        font-size: 6vw;
+        max-width: 95%;
     }
 }
