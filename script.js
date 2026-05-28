@@ -498,6 +498,12 @@ function listenToCloudData() {
             const impInput = document.getElementById('import');
             const expInput = document.getElementById('export');
             
+            // Se o último registro do banco for de hoje, sincroniza o valor de geração para a UI
+            const todayStr = new Date().toLocaleDateString('pt-BR');
+            if (latest.date === todayStr) {
+                state.productionToday = Math.max(state.productionToday || 0, Number(latest.production) || 0);
+            }
+
             // Forçamos a carga inicial com o último valor gravado no banco
             if (!_cpflInitialized) {
                 _cpflInitialized = true;
