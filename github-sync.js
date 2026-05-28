@@ -18,11 +18,19 @@ try {
 
 const db = admin.firestore();
 
-// Configurações SolaX
-const SOLAX_TOKEN = '202605120608478230237210';
+// Configurações SolaX — lidas dos GitHub Secrets (nunca hardcoded no código)
+const SOLAX_TOKEN = process.env.SOLAX_TOKEN;
+const SOLAX_SN1 = process.env.SOLAX_SN1;
+const SOLAX_SN2 = process.env.SOLAX_SN2;
+
+if (!SOLAX_TOKEN || !SOLAX_SN1 || !SOLAX_SN2) {
+    console.error("Erro: Variáveis de ambiente SOLAX_TOKEN, SOLAX_SN1 ou SOLAX_SN2 não configuradas.");
+    process.exit(1);
+}
+
 const DEVICES = [
-    { sn: 'C02711021F3193', name: 'Micro Inv. 1 (Micro-4in1)' },
-    { sn: 'C02711021F312R', name: 'Micro Inv. 2 (Micro-4in1)' }
+    { sn: SOLAX_SN1, name: 'Micro Inv. 1 (Micro-4in1)' },
+    { sn: SOLAX_SN2, name: 'Micro Inv. 2 (Micro-4in1)' }
 ];
 
 /**

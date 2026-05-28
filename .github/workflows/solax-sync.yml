@@ -28,4 +28,7 @@ jobs:
       - name: Run SolaX Sync Script
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SOLAX_TOKEN: ${{ secrets.SOLAX_TOKEN }}
+          SOLAX_SN1: ${{ secrets.SOLAX_SN1 }}
+          SOLAX_SN2: ${{ secrets.SOLAX_SN2 }}
         run: node github-sync.js

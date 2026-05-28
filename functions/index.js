@@ -6,11 +6,11 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Configurações SolaX
-const SOLAX_TOKEN = '202605120608478230237210';
+// Configurações SolaX — lidas de variáveis de ambiente (nunca hardcoded no código)
+const SOLAX_TOKEN = process.env.SOLAX_TOKEN;
 const DEVICES = [
-    { sn: 'C02711021F3193', name: 'Micro Inv. 1 (Micro-4in1)' },
-    { sn: 'C02711021F312R', name: 'Micro Inv. 2 (Micro-4in1)' }
+    { sn: process.env.SOLAX_SN1, name: 'Micro Inv. 1 (Micro-4in1)' },
+    { sn: process.env.SOLAX_SN2, name: 'Micro Inv. 2 (Micro-4in1)' }
 ];
 
 /**

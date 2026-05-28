@@ -14,6 +14,10 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 // 2. Configurações Solax & Bauru
+// NOTA DE SEGURANÇA: O SOLAX_TOKEN abaixo é um token de LEITURA PÚBLICA da API SolaX.
+// Ele permite apenas consultar dados de geração (watts, temperatura, kWh).
+// Não dá acesso a configurações, conta ou dados financeiros do portal SolaX.
+// O token de admin (Firebase) é mantido em GitHub Secrets e nunca aparece no código.
 const SOLAX_TOKEN = '202605120608478230237210';
 const DEVICES = [
     { sn: 'C02711021F3193', name: 'Micro Inv. 1 (Micro-4in1)' },
