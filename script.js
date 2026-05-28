@@ -277,6 +277,21 @@ async function syncSolaxOnly() {
         state.lastSyncDate = todayStr;
     }
 
+    // Evita requisições inúteis à noite (das 19:30 às 06:30) para economizar banda/bateria e evitar erros de proxy
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const timeVal = hour * 100 + minute;
+    if (timeVal > 1930 || timeVal < 630) {
+        console.log("[Solax] Fora do horário de geração (19:30 - 06:30). Pulando consulta.");
+        if (statusBadge) {
+            statusBadge.innerText = 'Sem Geração (Noite)';
+            statusBadge.className = 'badge offline';
+        }
+        updateDashboardUI(); // Carrega os dados locais/históricos na tela
+        return;
+    }
+
     // Lista expandida de proxies para maior chance de sucesso
     const proxies = [
         'https://api.allorigins.win/get?url=',
