@@ -39,7 +39,8 @@ let state = {
     history: [],
     groupedHistory: {},
     invDetails: DEVICES.map(d => ({ ...d, watts: 0, yield: 0, lifetimeKwh: 0, temp: '--', status: 'Conectando...', dcPower: [] })),
-    lifetimeKwh: 0   // soma do yieldtotal dos dois inversores (fonte: Solax API)
+    lifetimeKwh: 0,   // soma do yieldtotal dos dois inversores (fonte: Solax API)
+    lastSyncDate: null // Data do último sincronismo para controle de virada de dia
 };
 let energyChart = null;
 let energyChartLine = null;
@@ -267,6 +268,15 @@ async function syncSolaxOnly() {
     const statusBadge = document.getElementById('status-badge');
     statusBadge.innerText = "Sincronizando...";
 
+    // Controle de virada do dia calendário para resetar o painel caso a aba fique aberta
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+    if (!state.lastSyncDate) {
+        state.lastSyncDate = todayStr;
+    } else if (state.lastSyncDate !== todayStr) {
+        state.productionToday = 0;
+        state.lastSyncDate = todayStr;
+    }
+
     // Lista expandida de proxies para maior chance de sucesso
     const proxies = [
         'https://api.allorigins.win/get?url=',
@@ -334,17 +344,19 @@ async function syncSolaxOnly() {
         }
     });
 
-    state.productionToday = totalYield;
     state.wattsNow        = totalWatts;
     
     // Só sobrescreve se AMBOS os inversores responderam com sucesso para evitar soma parcial
     if (successCount === DEVICES.length && totalLifetime > 0) {
+        state.productionToday = totalYield;
         // Compensação de 6.40 kWh (energia gerada na fábrica/testes que não consta no portal SolaxCloud)
         const offset = 6.40;
         state.lifetimeKwh = Math.max(0, totalLifetime - offset);
         console.log(`[Solax] Total acumulado API (Completo com Offset): ${state.lifetimeKwh} kWh`);
     } else {
-        console.warn(`[Solax] Apenas ${successCount} de ${DEVICES.length} inversores responderam. Mantendo valor anterior para evitar dados parciais.`);
+        // Se um deles falhar ou apagar à noite, mantém o maior valor do dia
+        state.productionToday = Math.max(state.productionToday || 0, totalYield);
+        console.warn(`[Solax] Apenas ${successCount} de ${DEVICES.length} inversores responderam. Mantendo maior valor diário (${state.productionToday} kWh) para evitar dados parciais.`);
     }
     
     updateDashboardUI();
