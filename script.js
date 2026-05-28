@@ -274,6 +274,7 @@ async function syncSolaxOnly() {
         state.lastSyncDate = todayStr;
     } else if (state.lastSyncDate !== todayStr) {
         state.productionToday = 0;
+        state.invDetails.forEach(inv => inv.yield = 0); // Reseta a geração diária individual de cada inversor no novo dia
         state.lastSyncDate = todayStr;
     }
 
@@ -323,7 +324,7 @@ async function syncSolaxOnly() {
                     const yLifetime   = Number(r.yieldtotal   || r.yieldTotal   || 0);
 
                     state.invDetails[i].watts       = watts;
-                    state.invDetails[i].yield       = yDay;
+                    state.invDetails[i].yield       = Math.max(state.invDetails[i].yield || 0, yDay);
                     state.invDetails[i].lifetimeKwh = yLifetime;
                     state.invDetails[i].temp        = r.temperature || r.temperBoard || r.inverterTemp || '--';
                     state.invDetails[i].status      = getStatusText(r.inverterStatus, watts);
@@ -363,7 +364,7 @@ async function syncSolaxOnly() {
     
     // Só sobrescreve se AMBOS os inversores responderam com sucesso para evitar soma parcial
     if (successCount === DEVICES.length && totalLifetime > 0) {
-        state.productionToday = totalYield;
+        state.productionToday = Math.max(state.productionToday || 0, totalYield);
         // Compensação de 6.40 kWh (energia gerada na fábrica/testes que não consta no portal SolaxCloud)
         const offset = 6.40;
         state.lifetimeKwh = Math.max(0, totalLifetime - offset);
