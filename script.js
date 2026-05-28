@@ -802,9 +802,9 @@ function renderChart() {
     const sumArr = arr => arr.reduce((a, b) => a + b, 0);
 
     // ── Totais desde a instalação (histórico completo) ───────────────────────
-    // A geração acumulada é a soma do campo `production` de cada dia no histórico.
+    // Geração acumulada = exclusivamente o yieldtotal direto da API Solax
     // Importação/exportação vitalícia = diferença entre primeiro e último registro.
-    let lifetimeGer = 0;
+    let lifetimeGer = state.lifetimeKwh || 0;
     let lifetimeUso = 0;
     let lifetimeExp = 0;
     let lifetimeImp = 0;
@@ -820,29 +820,13 @@ function renderChart() {
         const oldest = sortedAll[0];
         const newest = sortedAll[sortedAll.length - 1];
 
-        // Geração acumulada = soma da produção de cada dia (campo salvo no Firestore)
-        state.history.forEach(h => {
-            lifetimeGer += Number(h.production || 0);
-        });
-        // Inclui produção de hoje se ainda não foi gravada
-        const todayStr = new Date().toLocaleDateString('pt-BR');
-        const todayInHist = state.history.some(h => h.date === todayStr);
-        if (!todayInHist && state.productionToday > 0) lifetimeGer += state.productionToday;
-
         // Exportação e importação vitalícias = delta entre primeiro e último registro acumulado
         lifetimeExp = Math.max(0, Number(newest.export)  - Number(oldest.export));
         lifetimeImp = Math.max(0, Number(newest.import)  - Number(oldest.import));
-        lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
     }
 
-    // ── FONTE PRIMÁRIA: yieldtotal diretamente da API Solax ─────────────────
-    // state.lifetimeKwh é a soma de yieldtotal dos dois inversores — mesmo valor
-    // exibido no SolaxCloud. Usa o fallback de soma diária apenas se a API ainda
-    // não retornou dados (ex: antes da primeira sincronização).
-    if (state.lifetimeKwh > 0) {
-        lifetimeGer = state.lifetimeKwh;
-        lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
-    }
+    // Calcula Uso do Sol usando exclusivamente a Geração Total vinda da API
+    lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
 
     const formatTotal = (v) => v >= 1000 ? (v/1000).toFixed(2) + ' <small>MWh</small>' : v.toFixed(1) + ' <small>kWh</small>';
 
