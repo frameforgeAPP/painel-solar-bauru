@@ -335,8 +335,8 @@ async function syncSolaxOnly() {
     
     // Só sobrescreve se AMBOS os inversores responderam com sucesso para evitar soma parcial
     if (successCount === DEVICES.length && totalLifetime > 0) {
-        // Compensação de 2.20 kWh (energia gerada na fábrica/testes que não consta no portal SolaxCloud)
-        const offset = 2.20;
+        // Compensação de 6.40 kWh (energia gerada na fábrica/testes que não consta no portal SolaxCloud)
+        const offset = 6.40;
         state.lifetimeKwh = Math.max(0, totalLifetime - offset);
         console.log(`[Solax] Total acumulado API (Completo com Offset): ${state.lifetimeKwh} kWh`);
     } else {
