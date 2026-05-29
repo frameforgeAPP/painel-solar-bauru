@@ -88,6 +88,7 @@ async function runSync() {
 
     let totalYield = 0;
     let totalWatts = 0;
+    let totalLifetime = 0;
     let successCount = 0;
     const inverterDetails = [];
 
@@ -97,20 +98,23 @@ async function runSync() {
         if (r.status === 'fulfilled' && r.value) {
             const watts = Number(r.value.acpower || r.value.acPower || 0);
             const yDay = Number(r.value.yieldtoday || r.value.yieldToday || 0);
+            const yLifetime = Number(r.value.yieldtotal || r.value.yieldTotal || 0);
             const temp = Number(r.value.inverterTemp || 0);
             
             totalYield += yDay;
             totalWatts += watts;
+            totalLifetime += yLifetime;
             successCount++;
             inverterDetails[index] = {
                 sn: devSn,
                 name: devName,
                 watts,
                 production: yDay,
+                lifetimeKwh: yLifetime,
                 temp
             };
             
-            console.log(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh | Temp: ${temp}°C`);
+            console.log(`[Solax] Inversor ${index + 1} (${devName}): ${watts}W | Hoje: ${yDay}kWh | Total: ${yLifetime}kWh | Temp: ${temp}°C`);
         } else {
             const errorMsg = r.status === 'rejected' ? r.reason.message : 'Sem dados válidos';
             console.error(`[Solax] Falha ao obter dados do Inversor ${index + 1} (${devSn}): ${errorMsg}`);
@@ -154,21 +158,30 @@ async function runSync() {
             }
         }
 
-        // 5. Gravar o novo documento
+        // 5. Calcular geração total acumulada (yieldtotal dos dois inversores - offset de fábrica de 6.40 kWh)
+        // Offset: energia gerada em fábrica/testes antes da instalação, que consta na memória do inversor mas não no SolaxCloud.
+        const LIFETIME_OFFSET = 6.40;
+        const lifetimeKwh = totalLifetime > 0 ? Number(Math.max(0, totalLifetime - LIFETIME_OFFSET).toFixed(2)) : 0;
+        if (lifetimeKwh > 0) {
+            console.log(`[Solax] Geração Total Acumulada: ${totalLifetime} kWh (bruto) - ${LIFETIME_OFFSET} kWh (offset) = ${lifetimeKwh} kWh`);
+        }
+
+        // 6. Gravar o novo documento
         const reading = {
             date: todayStr,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
             import: lastImport,
             export: lastExport,
             production: Number(prodToSave.toFixed(2)),
+            lifetimeKwh: lifetimeKwh,
             watts: totalWatts,
             inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
             inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
             inverters: inverterDetails
         };
 
-        const docRef = await leiturasCol.add(reading);
-        console.log(`[Sucesso] Leitura gravada com sucesso! ID: ${docRef.id} | watts: ${totalWatts}W | prod: ${prodToSave}kWh`);
+        const docRef = await db.collection("leituras").add(reading);
+        console.log(`[Sucesso] Leitura gravada com sucesso! ID: ${docRef.id} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | lifetimeKwh: ${lifetimeKwh}kWh`);
 
     } catch (err) {
         console.error(`Erro ao interagir com o Firestore: ${err.message}`, err);

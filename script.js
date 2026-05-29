@@ -38,8 +38,8 @@ let state = {
     wattsNow: 0,
     history: [],
     groupedHistory: {},
-    invDetails: DEVICES.map(d => ({ ...d, watts: 0, yield: 0, lifetimeKwh: 0, temp: '--', status: 'Conectando...', dcPower: [] })),
-    lifetimeKwh: 0,   // soma do yieldtotal dos dois inversores (fonte: Solax API)
+    invDetails: DEVICES.map((d, i) => ({ ...d, watts: 0, yield: 0, lifetimeKwh: parseFloat(localStorage.getItem(`solax_inv_lifetime_${i}`)) || 0, temp: '--', status: 'Conectando...', dcPower: [] })),
+    lifetimeKwh: parseFloat(localStorage.getItem('solax_lifetime_kwh')) || 0,   // soma do yieldtotal dos dois inversores (fonte: Solax API)
     lastSyncDate: null // Data do último sincronismo para controle de virada de dia
 };
 let energyChart = null;
@@ -330,6 +330,8 @@ async function syncSolaxOnly() {
                     state.invDetails[i].status      = getStatusText(r.inverterStatus, watts);
                     state.invDetails[i].dcPower     = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4]
                         .filter(v => v !== null && v !== undefined);
+                    // Cache individual por inversor para resiliência a falhas parciais
+                    if (yLifetime > 0) localStorage.setItem(`solax_inv_lifetime_${i}`, yLifetime);
                     console.log(`[Solax] Inv ${i+1} OK via ${proxy} — ${watts}W / hoje:${yDay}kWh / total:${yLifetime}kWh`);
                     return { watts, yDay, yLifetime };
                 }
@@ -362,17 +364,34 @@ async function syncSolaxOnly() {
 
     state.wattsNow        = totalWatts;
     
-    // Só sobrescreve se AMBOS os inversores responderam com sucesso para evitar soma parcial
-    if (successCount === DEVICES.length && totalLifetime > 0) {
+    // Calcula totalLifetime com resiliência: para inversores que falharam, usa o cache local individual
+    let resolvedLifetime = 0;
+    DEVICES.forEach((_, i) => {
+        const liveVal = state.invDetails[i].lifetimeKwh;
+        if (liveVal > 0) {
+            resolvedLifetime += liveVal;
+        } else {
+            // Inversor não respondeu — usa o último cache local daquele inversor
+            const cached = parseFloat(localStorage.getItem(`solax_inv_lifetime_${i}`)) || 0;
+            if (cached > 0) {
+                resolvedLifetime += cached;
+                console.warn(`[Solax] Inv ${i+1} falhou — usando cache local: ${cached} kWh`);
+            }
+        }
+    });
+
+    // Só sobrescreve se o total resolvido for maior que zero (evita regressiões para 0)
+    if (resolvedLifetime > 0) {
         state.productionToday = Math.max(state.productionToday || 0, totalYield);
         // Compensação de 6.40 kWh (energia gerada na fábrica/testes que não consta no portal SolaxCloud)
         const offset = 6.40;
-        state.lifetimeKwh = Math.max(0, totalLifetime - offset);
-        console.log(`[Solax] Total acumulado API (Completo com Offset): ${state.lifetimeKwh} kWh`);
-    } else {
-        // Se um deles falhar ou apagar à noite, mantém o maior valor do dia
+        state.lifetimeKwh = Math.max(state.lifetimeKwh || 0, Math.max(0, resolvedLifetime - offset));
+        localStorage.setItem('solax_lifetime_kwh', state.lifetimeKwh);
+        console.log(`[Solax] Total acumulado (Resolvido com Offset): ${state.lifetimeKwh} kWh (de ${resolvedLifetime} kWh brutos, ${successCount}/${DEVICES.length} inversores ativos)`);
+    } else if (successCount < DEVICES.length) {
+        // Nenhum cache disponível: protege produção diária sem sobrescrever lifetime
         state.productionToday = Math.max(state.productionToday || 0, totalYield);
-        console.warn(`[Solax] Apenas ${successCount} de ${DEVICES.length} inversores responderam. Mantendo maior valor diário (${state.productionToday} kWh) para evitar dados parciais.`);
+        console.warn(`[Solax] Apenas ${successCount} de ${DEVICES.length} inversores responderam e sem cache. Mantendo lifetimeKwh atual: ${state.lifetimeKwh} kWh.`);
     }
     
     updateDashboardUI();
@@ -430,6 +449,7 @@ async function syncData() {
         import: impValue,
         export: expValue,
         production: prodToSave,
+        lifetimeKwh: state.lifetimeKwh || 0,
         watts: state.wattsNow || 0,
         inverterWatts: state.invDetails.map(inv => Number(inv.watts) || 0),
         inverterTemps: state.invDetails.map(inv => Number(inv.temp) || 0),
@@ -476,6 +496,9 @@ function listenToCloudData() {
                 daySummaries[date].production = Math.max(daySummaries[date].production || 0, item.production || 0);
                 daySummaries[date].import = Math.max(daySummaries[date].import || 0, item.import || 0);
                 daySummaries[date].export = Math.max(daySummaries[date].export || 0, item.export || 0);
+                if (item.lifetimeKwh && (!daySummaries[date].lifetimeKwh || item.lifetimeKwh > daySummaries[date].lifetimeKwh)) {
+                    daySummaries[date].lifetimeKwh = item.lifetimeKwh;
+                }
                 // Mantemos o timestamp mais recente para ordenação
                 if (item.timestamp && (!daySummaries[date].timestamp || item.timestamp.seconds > daySummaries[date].timestamp.seconds)) {
                     daySummaries[date].timestamp = item.timestamp;
@@ -503,6 +526,18 @@ function listenToCloudData() {
             const todayStr = new Date().toLocaleDateString('pt-BR');
             if (latest.date === todayStr) {
                 state.productionToday = Math.max(state.productionToday || 0, Number(latest.production) || 0);
+            }
+
+            // Tenta resgatar o último lifetimeKwh válido da história como um fallback de alta precisão
+            let dbLifetimeKwh = 0;
+            for (const h of state.history) {
+                if (h.lifetimeKwh && h.lifetimeKwh > 0) {
+                    dbLifetimeKwh = h.lifetimeKwh;
+                    break;
+                }
+            }
+            if (dbLifetimeKwh > 0 && (!state.lifetimeKwh || state.lifetimeKwh === 0)) {
+                state.lifetimeKwh = dbLifetimeKwh;
             }
 
             // Forçamos a carga inicial com o último valor gravado no banco
@@ -840,9 +875,9 @@ function renderChart() {
     const sumArr = arr => arr.reduce((a, b) => a + b, 0);
 
     // ── Totais desde a instalação (histórico completo) ───────────────────────
-    // Geração acumulada = exclusivamente o yieldtotal direto da API Solax
+    // Geração acumulada = exclusivamente o yieldtotal direto da API Solax (com fallback da soma do Firestore)
     // Importação/exportação vitalícia = diferença entre primeiro e último registro.
-    let lifetimeGer = state.lifetimeKwh || 0;
+    let lifetimeGer = 0;
     let lifetimeUso = 0;
     let lifetimeExp = 0;
     let lifetimeImp = 0;
@@ -858,13 +893,29 @@ function renderChart() {
         const oldest = sortedAll[0];
         const newest = sortedAll[sortedAll.length - 1];
 
+        // Geração acumulada = soma da produção de cada dia (campo salvo no Firestore)
+        state.history.forEach(h => {
+            lifetimeGer += Number(h.production || 0);
+        });
+        // Inclui produção de hoje se ainda não foi gravada
+        const todayStr = new Date().toLocaleDateString('pt-BR');
+        const todayInHist = state.history.some(h => h.date === todayStr);
+        if (!todayInHist && state.productionToday > 0) lifetimeGer += state.productionToday;
+
         // Exportação e importação vitalícias = delta entre primeiro e último registro acumulado
         lifetimeExp = Math.max(0, Number(newest.export)  - Number(oldest.export));
         lifetimeImp = Math.max(0, Number(newest.import)  - Number(oldest.import));
+        lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
     }
 
-    // Calcula Uso do Sol usando exclusivamente a Geração Total vinda da API
-    lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
+    // ── FONTE PRIMÁRIA: yieldtotal diretamente da API Solax ─────────────────
+    // state.lifetimeKwh é a soma de yieldtotal dos dois inversores — mesmo valor
+    // exibido no SolaxCloud. Usa o fallback de soma diária apenas se a API ainda
+    // não retornou dados (ex: antes da primeira sincronização ou à noite em novo domínio).
+    if (state.lifetimeKwh > 0) {
+        lifetimeGer = state.lifetimeKwh;
+        lifetimeUso = Math.max(0, lifetimeGer - lifetimeExp);
+    }
 
     const formatTotal = (v) => v >= 1000 ? (v/1000).toFixed(2) + ' <small>MWh</small>' : v.toFixed(1) + ' <small>kWh</small>';
 
@@ -2387,3 +2438,256 @@ function updateTvClockTime() {
     if (slideTimeEl) slideTimeEl.textContent = timeStr;
     if (slideDateEl) slideDateEl.textContent = dateStr;
 }
+
+// =========================================================================
+// DICIONÁRIO DE DESCRIÇÕES INTELECTUAIS E LÓGICA DE MODAL
+// =========================================================================
+const METRIC_DESCRIPTIONS = {
+    "diario-geracao": {
+        title: "Geração Solar de Hoje",
+        badge: "Métrica de Geração · kWh",
+        icon: "fa-sun",
+        theme: "solar",
+        desc: "Quantidade total de eletricidade gerada hoje pelos seus 8 painéis solares em Bauru. Indica quanta energia limpa o sistema produziu.",
+        formula: "Obtido em tempo real pela API Solax Cloud. É a soma da geração do dia de ambos os microinversores.",
+        tip: "Nosso sistema tem capacidade de pico de 4.960W. Quanto maior o HSP (Horas de Sol Pleno), maior será esta métrica!"
+    },
+    "diario-consumo": {
+        title: "Consumo Total da Casa",
+        badge: "Métrica de Consumo · kWh",
+        icon: "fa-home",
+        theme: "home",
+        desc: "Consumo total de energia da casa hoje. É a soma de tudo que foi consumido diretamente do sol (autoconsumo) mais a energia comprada da distribuidora (CPFL).",
+        formula: "Cálculo: Geração Diária + Importação CPFL - Exportação CPFL",
+        tip: "Para economizar ao máximo, concentre o uso de aparelhos de alto consumo (como máquina de lavar e forno elétrico) durante o dia!"
+    },
+    "diario-saldo": {
+        title: "Saldo Líquido com a Rede CPFL",
+        badge: "Balanço com a Distribuidora · kWh",
+        icon: "fa-exchange-alt",
+        theme: "grid",
+        desc: "Diferença entre o excedente de energia solar injetado na rede e a energia elétrica consumida dela hoje.",
+        formula: "Cálculo: Exportação do Dia (EXP) - Importação do Dia (IMP)",
+        tip: "Saldo positivo (+) indica que você gerou mais do que consumiu da rede hoje, acumulando créditos que valem por 60 meses!"
+    },
+    "diario-potencia": {
+        title: "Potência Instantânea Atual",
+        badge: "Potência em Tempo Real · Watts",
+        icon: "fa-bolt",
+        theme: "solar",
+        desc: "A potência elétrica que seus painéis solares estão produzindo exatamente neste segundo (medido em Watts). Varia de acordo com a irradiação solar e nuvens.",
+        formula: "Lido diretamente em tempo real dos sensores de saída AC dos inversores via API SolaX.",
+        tip: "O sistema tem capacidade instalada máxima de 4960W (8 painéis × 620W). O recorde de potência costuma ocorrer por volta do meio-dia!"
+    },
+    "gauge-media": {
+        title: "Potência Média Diária",
+        badge: "Métrica de Geração · Watts",
+        icon: "fa-chart-pie",
+        theme: "accent",
+        desc: "Média de potência instantânea de geração gerada ao longo do período diurno de hoje.",
+        formula: "Calculado a partir da soma de todas as leituras de potência de hoje dividida pelo número de leituras.",
+        tip: "Uma média alta indica geração consistente, mesmo com variações na passagem de nuvens."
+    },
+    "gauge-efic": {
+        title: "Eficiência de Geração Atual",
+        badge: "Aproveitamento do Sistema · %",
+        icon: "fa-percent",
+        theme: "success",
+        desc: "A porcentagem de aproveitamento instantâneo do seu sistema solar em relação à sua capacidade máxima nominal (4.96 kW).",
+        formula: "Cálculo: (Potência Instantânea Atual ÷ 4960W) × 100",
+        tip: "Valores acima de 80% indicam excelente irradiação solar direta e temperatura ideal de operação dos painéis."
+    },
+    "gauge-pico": {
+        title: "Pico de Potência de Hoje",
+        badge: "Recorde do Dia · Watts",
+        icon: "fa-arrow-up",
+        theme: "grid",
+        desc: "O maior valor de potência elétrica instantânea registrado pelo sistema no dia de hoje, junto com o horário exato em que ocorreu.",
+        formula: "Monitorado a cada minuto e registrado no maior valor instantâneo obtido nas leituras da API SolaX.",
+        tip: "O pico de potência diário costuma acontecer entre as 11:30 e as 13:00, dependendo da inclinação do sol."
+    },
+    "totais-geracao": {
+        title: "Geração Total Histórica",
+        badge: "Total Acumulado · kWh",
+        icon: "fa-award",
+        theme: "solar",
+        desc: "Quantidade total e absoluta de energia elétrica limpa produzida por todos os seus painéis solares desde o dia da instalação do sistema.",
+        formula: "Soma vitalícia do rendimento de energia obtida diretamente da memória física de ambos os microinversores (com calibração de offset).",
+        tip: "Este número representa o total de emissões de carbono evitadas e o retorno acumulado do seu investimento solar!"
+    },
+    "totais-uso": {
+        title: "Uso Direto do Sol (Autoconsumo)",
+        badge: "Economia Integrada · kWh",
+        icon: "fa-solar-panel",
+        theme: "success",
+        desc: "A quantidade de energia que os painéis solares produziram e que foi consumida imediatamente dentro da sua casa em tempo real, sem passar pela rede elétrica da CPFL.",
+        formula: "Cálculo: Geração Total Histórica - Exportação Total Histórica",
+        tip: "Esta é a energia de maior valor financeiro, pois você a consome sem pagar nenhuma taxa de rede (como o Fio B) ou impostos de distribuição!"
+    },
+    "totais-exportado": {
+        title: "Energia Exportada CPFL",
+        badge: "Crédito Acumulado · kWh",
+        icon: "fa-arrow-circle-up",
+        theme: "solar",
+        desc: "Toda a energia gerada excedente que sua casa não consumiu no momento e foi enviado para a rede da CPFL, gerando créditos que podem ser usados em até 60 meses.",
+        formula: "Calculado a partir da diferença histórica registrada no medidor bidirecional da distribuidora (Tela 103).",
+        tip: "Cada 1 kWh exportado vira um crédito de 1 kWh para abater no seu consumo à noite ou nos próximos meses (válido por 5 anos)!"
+    },
+    "totais-compra": {
+        title: "Energia Comprada CPFL",
+        badge: "Consumo de Rede CPFL · kWh",
+        icon: "fa-arrow-circle-down",
+        theme: "home",
+        desc: "Quantidade acumulada de energia elétrica importada da distribuidora CPFL para alimentar a casa quando o sistema solar não estava produzindo (como à noite ou em dias de forte chuva).",
+        formula: "Calculado a partir da diferença histórica de importação registrada no medidor (Tela 03).",
+        tip: "Quanto menor esse número, menor será sua dependência da distribuidora pública!"
+    },
+    "totais-media-mes": {
+        title: "Geração Média Diária do Mês",
+        badge: "Eficiência Mensal · kWh/dia",
+        icon: "fa-chart-line",
+        theme: "accent",
+        desc: "A quantidade média de energia produzida por dia pelo sistema solar ao longo do mês corrente.",
+        formula: "Cálculo: Soma da geração de todos os dias monitorados do mês atual ÷ Número de dias com dados.",
+        tip: "Útil para comparar o desempenho real do sistema contra as expectativas teóricas de geração climatológica da região de Bauru."
+    },
+    "record-pico-watts": {
+        title: "Recorde Histórico de Potência",
+        badge: "Recorde Máximo · Watts",
+        icon: "fa-bolt",
+        theme: "grid",
+        desc: "A maior potência instantânea em Watts que o seu sistema já produziu em um único segundo desde a instalação.",
+        formula: "Monitorado a cada minuto e salvo de forma persistente a partir do maior registro detectado no histórico.",
+        tip: "O recorde do sistema reflete o dia ideal de geração: sol a pino, céu totalmente limpo e temperatura amena!"
+    },
+    "record-geracao-diaria": {
+        title: "Maior Geração em um Único Dia",
+        badge: "Recorde Máximo · kWh",
+        icon: "fa-sun",
+        theme: "solar",
+        desc: "O recorde absoluto de energia produzida em um único dia (de 0h a 24h) desde que o sistema entrou em operação.",
+        formula: "Recuperado a partir da varredura histórica completa do banco de dados Firestore.",
+        tip: "Bater esse recorde geralmente acontece na primavera ou outono, quando o sol está forte e o vento resfria os painéis, otimizando o silício!"
+    },
+    "record-economia-diaria": {
+        title: "Maior Economia em um Único Dia",
+        badge: "Recorde Máximo · R$",
+        icon: "fa-hand-holding-usd",
+        theme: "success",
+        desc: "O maior retorno financeiro equivalente economizado em um único dia pelo seu sistema solar.",
+        formula: "Cálculo: Recorde de Geração Diária (kWh) × Tarifa CPFL Vigente (R$/kWh)",
+        tip: "Esse valor demonstra o potencial máximo de retorno financeiro diário gerado pelo seu investimento solar!"
+    },
+    "cpfl-import": {
+        title: "Leitura de Compra da Rede (IMP)",
+        badge: "Medição CPFL · Tela 03",
+        icon: "fa-tachometer-alt",
+        theme: "home",
+        desc: "O valor acumulador que consta na **Tela 03** do medidor digital da CPFL na calçada. Representa o consumo total de energia importada da rede.",
+        formula: "Digitado manualmente a partir da leitura do relógio digital bidirecional.",
+        tip: "Digite esse valor periodicamente para atualizar o dashboard e prever sua fatura com extrema precisão!"
+    },
+    "cpfl-export": {
+        title: "Leitura de Crédito da Rede (EXP)",
+        badge: "Medição CPFL · Tela 103",
+        icon: "fa-exchange-alt",
+        theme: "success",
+        desc: "O valor acumulador que consta na **Tela 103** do medidor digital da CPFL na calçada. Representa o total de energia excedente injetada na rede.",
+        formula: "Digitado manualmente a partir da leitura do relógio digital bidirecional.",
+        tip: "Digite esse valor para calcular automaticamente o saldo líquido de créditos do seu faturamento mensal."
+    },
+    "previsao-fatura": {
+        title: "Cálculo da Previsão de Fatura",
+        badge: "Previsão Financeira · R$",
+        icon: "fa-file-invoice-dollar",
+        theme: "grid",
+        desc: "Uma estimativa inteligente em Reais (R$) de quanto virá sua próxima conta da CPFL baseando-se no ciclo ativo e na legislação tarifária nacional.",
+        formula: "Cálculo: (Consumo líquido projetado bifásico × Tarifa Ativa R$0,95) + Taxa de Iluminação Pública (CIP) + Tarifa de Distribuição (Fio B sobre total importado sob a regra da Lei 14.300/22 de 60% em 2026).",
+        tip: "O cálculo respeita o consumo mínimo faturável para sistemas bifásicos (50 kWh/mês). Se o seu saldo de créditos for muito alto, você pagará apenas a taxa mínima!"
+    },
+    "economia-hoje": {
+        title: "Economia Financeira de Hoje",
+        badge: "Retorno Financeiro · R$",
+        icon: "fa-sun",
+        theme: "success",
+        desc: "O valor em Reais (R$) economizado hoje ao gerar sua própria energia elétrica limpa na sua residência em Bauru.",
+        formula: "Cálculo: Geração Diária (kWh) × Tarifa CPFL Residencial B1 (R$ 0,95/kWh)",
+        tip: "Mesmo que você exporte energia, cada kWh produzido tem o mesmo valor financeiro de um kWh economizado!"
+    },
+    "economia-mes": {
+        title: "Economia Acumulada no Mês",
+        badge: "Retorno Financeiro · R$",
+        icon: "fa-calendar-alt",
+        theme: "success",
+        desc: "A soma total em Reais (R$) de todo o benefício financeiro gerado pelo sistema de energia solar ao longo do mês corrente.",
+        formula: "Cálculo: Geração Mensal Acumulada (kWh) × Tarifa CPFL Residencial B1 (R$ 0,95/kWh)",
+        tip: "Esse valor mostra diretamente a redução na sua conta mensal de luz e o progresso do retorno do investimento solar."
+    },
+    "economia-semsolar": {
+        title: "Conta Sem Energia Solar",
+        badge: "Projeção Financeira · R$",
+        icon: "fa-bolt",
+        theme: "grid",
+        desc: "Uma estimativa de quanto seria o valor total da sua fatura da CPFL se você não tivesse instalado o sistema de energia solar.",
+        formula: "Cálculo: Consumo Total Projetado da Casa (Autoconsumo + Comprado) × Tarifa CPFL + CIP + Impostos.",
+        tip: "Este é o melhor indicador do real retorno financeiro do sistema, mostrando a brutal diferença entre possuir ou não energia solar!"
+    }
+};
+
+function showItemDescription(metricKey) {
+    const data = METRIC_DESCRIPTIONS[metricKey];
+    if (!data) return;
+
+    document.getElementById('desc-modal-title').textContent = data.title;
+    document.getElementById('desc-modal-badge').textContent = data.badge;
+    document.getElementById('desc-modal-text').innerHTML = data.desc;
+    
+    // Configura o Ícone
+    const iconEl = document.getElementById('desc-modal-icon');
+    iconEl.className = `fas ${data.icon}`;
+    const iconWrap = document.getElementById('desc-modal-icon-wrap');
+    iconWrap.className = `desc-modal-icon-circle ${data.theme}`;
+
+    // Configura a Fórmula / Origem
+    const formulaWrap = document.getElementById('desc-modal-formula-wrap');
+    if (data.formula) {
+        document.getElementById('desc-modal-formula').textContent = data.formula;
+        formulaWrap.style.display = 'block';
+    } else {
+        formulaWrap.style.display = 'none';
+    }
+
+    // Configura a Dica
+    const tipWrap = document.getElementById('desc-modal-tip-wrap');
+    if (data.tip) {
+        document.getElementById('desc-modal-tip').textContent = data.tip;
+        tipWrap.style.display = 'block';
+    } else {
+        tipWrap.style.display = 'none';
+    }
+
+    // Abre o Modal com animação suave
+    const modal = document.getElementById('desc-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.classList.add('active');
+    }, 10);
+}
+
+function closeDescModal(event) {
+    const modal = document.getElementById('desc-modal');
+    if (!modal) return;
+    
+    // Se o evento for de clique no overlay, fecha apenas se o clique ocorreu no próprio overlay
+    if (event && event.type === 'click' && event.target !== modal) {
+        return;
+    }
+    
+    modal.classList.remove('active');
+    setTimeout(() => {
+        if (!modal.classList.contains('active')) {
+            modal.style.display = 'none';
+        }
+    }, 300);
+}
+
