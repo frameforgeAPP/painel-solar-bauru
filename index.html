@@ -58,7 +58,8 @@
             <div class="card main-flow card-daily">
                 <h3 style="margin-top: 0; margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Diário</h3>
                 <div class="flow-container">
-                    <div class="node solar">
+                    <div class="node solar" style="position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 6px; right: 6px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('diario-geracao')"></i>
                         <div class="icon-circle"><i class="fas fa-sun"></i></div>
                         <span class="label">Geração</span>
                         <span class="value skeleton" id="val-production">0.00 <small>kWh</small></span>
@@ -66,14 +67,16 @@
                         <span id="val-hsp" style="font-size: 0.58rem; font-weight: bold; color: var(--success); margin-top: 3px; display: block;">-- HSP</span>
                     </div>
                     <div class="flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                    <div class="node home">
+                    <div class="node home" style="position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 6px; right: 6px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('diario-consumo')"></i>
                         <div class="icon-circle"><i class="fas fa-home"></i></div>
                         <span class="label">Consumo</span>
                         <span class="value skeleton" id="val-consumption">0.00 <small>kWh</small></span>
                         <span class="sub-value">&nbsp;</span>
                     </div>
                     <div class="flow-arrow"><i class="fas fa-exchange-alt"></i></div>
-                    <div class="node grid">
+                    <div class="node grid" style="position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 6px; right: 6px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('diario-saldo')"></i>
                         <div class="icon-circle"><i class="fas fa-bolt"></i></div>
                         <span class="label">Rede (Saldo)</span>
                         <span class="value skeleton" id="val-grid">0.0 <small>kWh</small></span>
@@ -82,7 +85,8 @@
                 </div>
 
                 <!-- GAUGE DE POTÊNCIA ATUAL -->
-                <div class="power-gauge-container">
+                <div class="power-gauge-container" style="position: relative;">
+                    <i class="fas fa-info-circle" style="position: absolute; top: 10px; right: 10px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('diario-potencia')"></i>
                     <div class="power-gauge-header">
                         <span><i class="fas fa-bolt"></i> Potência Instantânea</span>
                         <span class="power-gauge-percent" id="gauge-percent">0%</span>
@@ -96,13 +100,16 @@
                     </div>
                     <!-- Estatísticas de Potência do Dia -->
                     <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-light); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--bg); gap: 4px;">
-                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap; padding: 2px 4px; border-radius: 4px;">
+                            <i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem;" onclick="event.stopPropagation(); showItemDescription('gauge-media')"></i>
                             <i class="fas fa-chart-pie" style="color: #9b59b6;"></i> Média: <strong id="gauge-avg-day" style="color: var(--text);">-- W</strong>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap; padding: 2px 4px; border-radius: 4px;">
+                            <i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem;" onclick="event.stopPropagation(); showItemDescription('gauge-efic')"></i>
                             <i class="fas fa-bolt" style="color: #f1c40f;"></i> Efic: <strong id="gauge-efficiency" style="color: var(--text);">--%</strong>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                        <div style="display: flex; align-items: center; gap: 3px; white-space: nowrap; padding: 2px 4px; border-radius: 4px;">
+                            <i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem;" onclick="event.stopPropagation(); showItemDescription('gauge-pico')"></i>
                             <i class="fas fa-arrow-up" style="color: #e74c3c;"></i> Pico: <strong id="gauge-peak-day" style="color: var(--text);">-- W</strong> <span id="gauge-peak-time" style="font-size: 0.55rem;">(--:--)</span>
                         </div>
                     </div>
@@ -118,7 +125,8 @@
                 <h3><i class="fas fa-award"></i> Totais Desde a Instalação</h3>
 
                 <!-- Destaque: Total Gerado -->
-                <div style="background: linear-gradient(135deg, rgba(243,156,18,0.12), rgba(39,174,96,0.12)); border: 1px solid rgba(243,156,18,0.25); border-radius: 12px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="background: linear-gradient(135deg, rgba(243,156,18,0.12), rgba(39,174,96,0.12)); border: 1px solid rgba(243,156,18,0.25); border-radius: 12px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; position: relative;">
+                    <i class="fas fa-info-circle" style="position: absolute; top: 8px; right: 8px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('totais-geracao')"></i>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-solar-panel" style="color: #f39c12; font-size: 1.1rem;"></i>
                         <span style="font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light);">Geração Total</span>
@@ -128,22 +136,26 @@
 
                 <!-- 3 Métricas -->
                 <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 8px; gap: 5px;">
-                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box; position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 4px; right: 4px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('totais-uso')"></i>
                         <span class="label" style="color: #27ae60; font-size: 0.55rem;">Uso do Sol</span>
                         <span class="value skeleton" id="val-total-uso" style="font-size: 0.85rem;">0 <small>kWh</small></span>
                     </div>
-                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                    <div class="node solar" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box; position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 4px; right: 4px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('totais-exportado')"></i>
                         <span class="label" style="color: #d35400; font-size: 0.55rem;">Exportado</span>
                         <span class="value skeleton" id="val-total-exp" style="font-size: 0.85rem;">0 <small>kWh</small></span>
                     </div>
-                    <div class="node home" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box;">
+                    <div class="node home" style="background: var(--bg); padding: 10px 5px; border-radius: 10px; width: 100%; box-sizing: border-box; position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 4px; right: 4px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('totais-compra')"></i>
                         <span class="label" style="color: #3498db; font-size: 0.55rem;">Compra CPFL</span>
                         <span class="value skeleton" id="val-total-imp" style="font-size: 0.85rem;">0 <small>kWh</small></span>
                     </div>
                 </div>
 
                 <!-- Média diária do mês -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 10px; padding: 9px 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 10px; padding: 9px 14px; position: relative;">
+                    <i class="fas fa-info-circle" style="position: absolute; top: 8px; right: 8px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('totais-media-mes')"></i>
                     <div style="display: flex; align-items: center; gap: 7px;">
                         <i class="fas fa-chart-line" style="color: #9b59b6; font-size: 0.9rem;"></i>
                         <span style="font-size: 0.68rem; font-weight: bold; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.4px;">Média Diária — <span id="val-avg-month-label">este mês</span></span>
@@ -164,16 +176,16 @@
                 </div>
                 <div id="records-details" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease; background: var(--bg); border-radius: 10px; margin-top: 4px;">
                     <div style="padding: 10px 14px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; border-left: 3px solid #f1c40f;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color: var(--text-light);">⚡ Pico de Potência</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; border-radius: 6px;">
+                            <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('record-pico-watts')"></i><span style="color: var(--text-light);">⚡ Pico de Potência</span></span>
                             <span style="font-weight:bold;" id="record-watts">-- W</span>
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color: var(--text-light);">☀️ Maior Geração Diária</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; border-radius: 6px;">
+                            <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('record-geracao-diaria')"></i><span style="color: var(--text-light);">☀️ Maior Geração Diária</span></span>
                             <span style="font-weight:bold; color: var(--success);" id="record-yield">-- kWh</span>
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color: var(--text-light);">💰 Maior Economia Diária</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; border-radius: 6px;">
+                            <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.7rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('record-economia-diaria')"></i><span style="color: var(--text-light);">💰 Maior Economia Diária</span></span>
                             <span style="font-weight:bold; color: var(--success);" id="record-savings">R$ --,--</span>
                         </div>
                     </div>
@@ -270,14 +282,15 @@
 
                 <div class="cpfl-meters">
                     <!-- IMPORT -->
-                    <div class="cpfl-meter-block" id="cpfl-block-import">
+                    <div class="cpfl-meter-block" id="cpfl-block-import" style="position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 6px; right: 6px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('cpfl-import')"></i>
                         <div class="cpfl-meter-label">
                             <div style="display:flex; align-items:center; gap:5px;">
                                 <i class="fas fa-arrow-circle-down" style="color:#3498db"></i>
                                 <span>Tela 03 - Compra CPFL IMP</span>
                             </div>
                         </div>
-                        <div class="cpfl-display-wrap">
+                        <div class="cpfl-display-wrap" onclick="event.stopPropagation()">
                             <input type="number" id="import" class="cpfl-display-input" step="0.01"
                                    placeholder="0" inputmode="decimal"
                                    oninput="onCpflInput('import')">
@@ -289,14 +302,15 @@
                     <div class="cpfl-divider"><i class="fas fa-exchange-alt"></i></div>
 
                     <!-- EXPORT -->
-                    <div class="cpfl-meter-block" id="cpfl-block-export">
+                    <div class="cpfl-meter-block" id="cpfl-block-export" style="position: relative;">
+                        <i class="fas fa-info-circle" style="position: absolute; top: 6px; right: 6px; color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; z-index: 2;" onclick="event.stopPropagation(); showItemDescription('cpfl-export')"></i>
                         <div class="cpfl-meter-label">
                             <div style="display:flex; align-items:center; gap:5px;">
                                 <i class="fas fa-arrow-circle-up" style="color:#27ae60"></i>
                                 <span>Tela 103 Crédito CPFL EXP</span>
                             </div>
                         </div>
-                        <div class="cpfl-display-wrap">
+                        <div class="cpfl-display-wrap" onclick="event.stopPropagation()">
                             <input type="number" id="export" class="cpfl-display-input" step="0.01"
                                    placeholder="0" inputmode="decimal"
                                    oninput="onCpflInput('export')">
@@ -352,7 +366,10 @@
                 <!-- Cabeçalho sempre visível -->
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <h3 style="margin:0 0 2px 0"><i class="fas fa-file-invoice-dollar" style="color:#e74c3c; margin-right:4px;"></i> Previsão da Fatura</h3>
+                        <h3 style="margin:0 0 2px 0">
+                            <i class="fas fa-file-invoice-dollar" style="color:#e74c3c; margin-right:4px;"></i> Previsão da Fatura
+                            <i class="fas fa-info-circle" style="color:var(--text-light); margin-left: 5px; opacity:0.6; font-size: 0.72rem; cursor: pointer;" onclick="event.stopPropagation(); showItemDescription('previsao-fatura')" title="Como é calculada a fatura?"></i>
+                        </h3>
                         <div id="bill-month-label" style="font-size:0.68rem; color:var(--text-light); padding-left:22px;"></div>
                     </div>
                     <div style="text-align:right; display:flex; align-items:center; gap:8px;">
@@ -395,18 +412,18 @@
                 
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     <!-- Economia de Hoje -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
-                        <span style="color:var(--text-light);"><i class="fas fa-sun" style="color:var(--solar); margin-right:4px;"></i> Economia Gerada Hoje</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; padding: 4px 6px; border-radius: 6px;">
+                        <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('economia-hoje')"></i><span style="color:var(--text-light);"><i class="fas fa-sun" style="color:var(--solar); margin-right:4px;"></i> Economia Gerada Hoje</span></span>
                         <span id="val-savings" style="font-weight:bold; color:#27ae60;" class="skeleton">R$ 0,00</span>
                     </div>
                     <!-- Economia do Mês -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
-                        <span style="color:var(--text-light);"><i class="fas fa-calendar-alt" style="color:#3498db; margin-right:4px;"></i> Economia Acumulada no Mês</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; padding: 4px 6px; border-radius: 6px;">
+                        <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('economia-mes')"></i><span style="color:var(--text-light);"><i class="fas fa-calendar-alt" style="color:#3498db; margin-right:4px;"></i> Economia Acumulada no Mês</span></span>
                         <span id="val-savings-month" style="font-weight:bold; color:#27ae60;" class="skeleton">R$ 0,00</span>
                     </div>
                     <!-- Estimativa Sem Solar -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; border-top:1px dashed var(--bg); padding-top:8px; margin-top:2px;">
-                        <span style="color:var(--text-light);"><i class="fas fa-bolt" style="color:#e74c3c; margin-right:4px;"></i> Se não tivesse Energia Solar</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; border-top:1px dashed var(--bg); padding-top:8px; margin-top:2px; padding: 4px 6px; border-radius: 6px;">
+                        <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('economia-semsolar')"></i><span style="color:var(--text-light);"><i class="fas fa-bolt" style="color:#e74c3c; margin-right:4px;"></i> Se não tivesse Energia Solar</span></span>
                         <span id="val-nosolar-month" style="font-weight:bold; color:#e74c3c;" class="skeleton">R$ 0,00</span>
                     </div>
                 </div>
@@ -560,6 +577,35 @@
                 <span class="tv-dot" onclick="goToSlide(3)"></span>
                 <span class="tv-dot" onclick="goToSlide(4)"></span>
                 <span class="tv-dot" onclick="goToSlide(5)"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD EXPLICATIVO INTERATIVO (MODAL OVERLAY) -->
+    <div id="desc-modal" class="desc-modal" onclick="closeDescModal(event)">
+        <div class="desc-modal-content" onclick="event.stopPropagation()">
+            <button class="desc-modal-close" onclick="closeDescModal()" aria-label="Fechar modal"><i class="fas fa-times"></i></button>
+            <div class="desc-modal-header">
+                <div id="desc-modal-icon-wrap" class="desc-modal-icon-circle">
+                    <i id="desc-modal-icon" class="fas fa-info"></i>
+                </div>
+                <div>
+                    <h3 id="desc-modal-title">Título do Item</h3>
+                    <span id="desc-modal-badge" class="desc-modal-badge">Métrica</span>
+                </div>
+            </div>
+            <div class="desc-modal-body">
+                <p id="desc-modal-text">Descrição detalhada...</p>
+                
+                <div id="desc-modal-formula-wrap" class="desc-modal-box formula-box">
+                    <strong><i class="fas fa-calculator"></i> Cálculo / Origem:</strong>
+                    <span id="desc-modal-formula">Fórmula</span>
+                </div>
+
+                <div id="desc-modal-tip-wrap" class="desc-modal-box tip-box">
+                    <strong><i class="fas fa-lightbulb"></i> Dica Inteligente:</strong>
+                    <span id="desc-modal-tip">Dica...</span>
+                </div>
             </div>
         </div>
     </div>

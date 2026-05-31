@@ -449,21 +449,14 @@ async function syncData() {
         import: impValue,
         export: expValue,
         production: prodToSave,
-        lifetimeKwh: state.lifetimeKwh || 0,
-        watts: state.wattsNow || 0,
-        inverterWatts: state.invDetails.map(inv => Number(inv.watts) || 0),
-        inverterTemps: state.invDetails.map(inv => Number(inv.temp) || 0),
-        inverters: state.invDetails.map(inv => ({
-            sn: inv.sn,
-            name: inv.name,
-            watts: Number(inv.watts) || 0,
-            production: Number(inv.yield) || 0,
-            temp: Number(inv.temp) || 0
-        }))
+        lifetimeKwh: state.lifetimeKwh || 0
     };
 
     try {
-        await db.collection("leituras").add(reading);
+        // Usa ID fixo por data (YYYY-MM-DD) — 1 documento por dia, mesmo padrão do cron
+        // merge: true preserva campos de geração (production, watts) já gravados pelo cron
+        const todayISO = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD"
+        await db.collection("leituras").doc(todayISO).set(reading, { merge: true });
         localStorage.setItem('lastImport', impValue);
         localStorage.setItem('lastExport', expValue);
         document.getElementById('status-badge').innerText = "Gravado!";
@@ -477,7 +470,8 @@ async function syncData() {
 
 // 6. Dados e UI
 function listenToCloudData() {
-    db.collection("leituras").orderBy("timestamp", "desc").limit(300).onSnapshot((snapshot) => {
+    // limit(500) = ~1,4 anos de histórico com 1 documento por dia
+    db.collection("leituras").orderBy("timestamp", "desc").limit(500).onSnapshot((snapshot) => {
         let daySummaries = {};
         let grouped = {};
 
