@@ -125,7 +125,7 @@ async function runSync() {
     // 2. Só prossegue se ambos os inversores responderam com sucesso
     if (successCount !== DEVICES.length) {
         console.warn(`[Solax] Apenas ${successCount} de ${DEVICES.length} inversores responderam. Cancelando gravação para evitar dados parciais.`);
-        return;
+        process.exit(1); // Falha intencional para disparar o alerta por e-mail do GitHub Actions
     }
 
     try {
