@@ -476,7 +476,10 @@ async function syncData() {
 // 6. Dados e UI
 function listenToCloudData() {
     // limit(500) = ~1,4 anos de histórico com 1 documento por dia
-    db.collection("leituras").orderBy("timestamp", "desc").limit(500).onSnapshot((snapshot) => {
+    // Habilita cache local (Persistência) para reduzir custos e melhorar velocidade offline
+    firebase.firestore().enablePersistence().catch(err => console.warn("Erro de Persistência:", err));
+
+    db.collection("leituras").orderBy("timestamp", "desc").limit(5000).onSnapshot((snapshot) => {
         let daySummaries = {};
         let grouped = {};
 
