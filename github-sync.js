@@ -73,7 +73,8 @@ async function runSync() {
     const minute = parseInt(minStr, 10);
     const timeValue = hour * 100 + minute;
 
-    if (timeValue < 630 || timeValue > 1930) {
+    const isManualRun = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
+    if ((timeValue < 630 || timeValue > 1930) && !isManualRun) {
         console.log(`Fora do horário operacional solicitado (${timeStr}). Encerrando execução antecipadamente.`);
         return;
     }
