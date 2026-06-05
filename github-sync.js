@@ -37,7 +37,7 @@ const DEVICES = [
  * Realiza a chamada à API do SolaX com tentativas (retry) em caso de falha.
  */
 async function fetchInverterWithRetry(sn, tokenId, retries = 3, delayMs = 2000) {
-    const url = `https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${tokenId}&sn=${sn}&t=${Date.now()}`;
+    const url = `https://global.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${tokenId}&sn=${sn}&t=${Date.now()}`;
     
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
@@ -128,25 +128,42 @@ async function runSync() {
     }
 
     try {
-        // 3. Buscar o último documento da coleção "leituras" para herdar dados CPFL
+        // 3. ID do documento = data no formato ISO (ex: "2026-05-31") — 1 documento por dia
         const leiturasCol = db.collection("leituras");
-        const snapshot = await leiturasCol.orderBy("timestamp", "desc").limit(1).get();
+        const todayISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // "YYYY-MM-DD"
+
+        // 3a. Verifica se já existe documento para hoje (pode ter import/export sincronizado manualmente)
+        const todayDocRef = leiturasCol.doc(todayISO);
+        const todayDocSnap = await todayDocRef.get();
 
         let lastImport = 0;
         let lastExport = 0;
         let lastProduction = 0;
         let lastDate = "";
+        let todayAlreadyExists = todayDocSnap.exists;
 
-        if (!snapshot.empty) {
-            const lastDoc = snapshot.docs[0].data();
-            lastImport = Number(lastDoc.import) || 0;
-            lastExport = Number(lastDoc.export) || 0;
-            lastProduction = Number(lastDoc.production) || 0;
-            lastDate = lastDoc.date || "";
-            
-            console.log(`Dados herdados da última leitura (${lastDate}): import: ${lastImport} | export: ${lastExport} | prod: ${lastProduction}`);
+        if (todayAlreadyExists) {
+            // Já existe registro de hoje: herda import/export do próprio documento do dia
+            // (pode ter sido sincronizado manualmente pelo usuário — não deve ser sobrescrito)
+            const d = todayDocSnap.data();
+            lastImport = Number(d.import) || 0;
+            lastExport = Number(d.export) || 0;
+            lastProduction = Number(d.production) || 0;
+            lastDate = d.date || todayStr;
+            console.log(`[Hoje já existe] Herdando import/export do doc de hoje: import: ${lastImport} | export: ${lastExport} | prod: ${lastProduction}`);
         } else {
-            console.warn("A coleção 'leituras' está vazia.");
+            // Primeira escrita do dia: herda import/export do último documento gravado (qualquer dia)
+            const snapshot = await leiturasCol.orderBy("timestamp", "desc").limit(1).get();
+            if (!snapshot.empty) {
+                const lastDoc = snapshot.docs[0].data();
+                lastImport = Number(lastDoc.import) || 0;
+                lastExport = Number(lastDoc.export) || 0;
+                lastProduction = Number(lastDoc.production) || 0;
+                lastDate = lastDoc.date || "";
+                console.log(`[Primeiro registro do dia] Herdando de (${lastDate}): import: ${lastImport} | export: ${lastExport} | prod: ${lastProduction}`);
+            } else {
+                console.warn("A coleção 'leituras' está vazia.");
+            }
         }
 
         // 4. Lógica de Proteção contra Lag SolaX
@@ -166,22 +183,35 @@ async function runSync() {
             console.log(`[Solax] Geração Total Acumulada: ${totalLifetime} kWh (bruto) - ${LIFETIME_OFFSET} kWh (offset) = ${lifetimeKwh} kWh`);
         }
 
-        // 6. Gravar o novo documento
-        const reading = {
-            date: todayStr,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            import: lastImport,
-            export: lastExport,
-            production: Number(prodToSave.toFixed(2)),
-            lifetimeKwh: lifetimeKwh,
-            watts: totalWatts,
-            inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
-            inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
-            inverters: inverterDetails
-        };
-
-        const docRef = await db.collection("leituras").add(reading);
-        console.log(`[Sucesso] Leitura gravada com sucesso! ID: ${docRef.id} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | lifetimeKwh: ${lifetimeKwh}kWh`);
+        if (todayAlreadyExists) {
+            // 6a. Documento do dia já existe → atualiza APENAS os campos solares
+            //     import/export NÃO são tocados (preserva sync manual do usuário)
+            await todayDocRef.update({
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                production: Number(prodToSave.toFixed(2)),
+                lifetimeKwh: lifetimeKwh,
+                watts: totalWatts,
+                inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
+                inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
+                inverters: inverterDetails
+            });
+            console.log(`[Atualizado] Doc ${todayISO} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | lifetimeKwh: ${lifetimeKwh}kWh`);
+        } else {
+            // 6b. Primeiro registro do dia → cria o documento completo herdando import/export de ontem
+            await todayDocRef.set({
+                date: todayStr,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                import: lastImport,
+                export: lastExport,
+                production: Number(prodToSave.toFixed(2)),
+                lifetimeKwh: lifetimeKwh,
+                watts: totalWatts,
+                inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
+                inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
+                inverters: inverterDetails
+            });
+            console.log(`[Criado] Doc ${todayISO} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | import herdado: ${lastImport} | export herdado: ${lastExport}`);
+        }
 
     } catch (err) {
         console.error(`Erro ao interagir com o Firestore: ${err.message}`, err);
