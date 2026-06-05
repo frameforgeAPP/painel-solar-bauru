@@ -1852,3 +1852,217 @@ body.dark-mode .tv-mode-overlay {
         max-width: 95%;
     }
 }
+
+/* ========================================================================= */
+/* Interactive Dashboard Items & Premium Description Modal                  */
+/* ========================================================================= */
+.interactive-item {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s, background-color 0.2s;
+    user-select: none;
+}
+.interactive-item:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    background-color: rgba(0,0,0,0.01) !important;
+}
+body.dark-mode .interactive-item:hover {
+    background-color: rgba(255,255,255,0.02) !important;
+}
+
+/* Indicador visual de informação discreto */
+.interactive-item::after {
+    content: "\f05a"; /* fa-info-circle */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    opacity: 0.15;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+.interactive-item:hover::after {
+    opacity: 0.8;
+    color: var(--accent);
+}
+
+/* Ajuste específico para a barra do gauge de potência */
+.power-gauge-container.interactive-item:hover {
+    background-color: rgba(0,0,0,0.03) !important;
+}
+body.dark-mode .power-gauge-container.interactive-item:hover {
+    background-color: #2e2e2e !important;
+}
+
+/* Estilos do Modal de Descrição */
+.desc-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1500; /* Acima do overlay do modo TV */
+    display: flex;
+    align-items: flex-end; /* Bottom sheet no mobile */
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.desc-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.desc-modal-content {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card-bg);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    padding: 26px 22px 28px;
+    box-sizing: border-box;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+}
+.desc-modal.active .desc-modal-content {
+    transform: translateY(0);
+}
+
+/* Visualização Centralizada no Computador/Desktop */
+@media (min-width: 768px) {
+    .desc-modal {
+        align-items: center;
+    }
+    .desc-modal-content {
+        border-radius: 24px;
+        transform: scale(0.9) translateY(30px);
+        box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+    }
+    .desc-modal.active .desc-modal-content {
+        transform: scale(1) translateY(0);
+    }
+}
+
+.desc-modal-close {
+    position: absolute;
+    top: 18px; right: 18px;
+    background: var(--bg);
+    border: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text);
+    font-size: 0.95rem;
+    transition: background 0.2s, transform 0.2s;
+    outline: none;
+}
+.desc-modal-close:hover {
+    background: #e2e8f0;
+    transform: scale(1.08);
+}
+body.dark-mode .desc-modal-close:hover {
+    background: #334155;
+}
+
+.desc-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-right: 30px; /* Evita sobreposição com o botão Fechar */
+}
+
+.desc-modal-icon-circle {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+.desc-modal-icon-circle.solar { color: var(--solar); background: #fffde6; }
+.desc-modal-icon-circle.home { color: var(--home); background: #f0f7ff; }
+.desc-modal-icon-circle.grid { color: var(--grid); background: #fff5f5; }
+.desc-modal-icon-circle.success { color: var(--success); background: #f0fdf4; }
+.desc-modal-icon-circle.accent { color: var(--accent); background: #f0f9ff; }
+
+body.dark-mode .desc-modal-icon-circle.solar { background: rgba(255, 213, 79, 0.08); }
+body.dark-mode .desc-modal-icon-circle.home { background: rgba(100, 181, 246, 0.08); }
+body.dark-mode .desc-modal-icon-circle.grid { background: rgba(229, 115, 115, 0.08); }
+body.dark-mode .desc-modal-icon-circle.success { background: rgba(129, 199, 132, 0.08); }
+body.dark-mode .desc-modal-icon-circle.accent { background: rgba(52, 152, 219, 0.08); }
+
+.desc-modal-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.25;
+}
+
+.desc-modal-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-light);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-top: 5px;
+    letter-spacing: 0.6px;
+}
+body.dark-mode .desc-modal-badge {
+    background: #2a2a2a;
+}
+
+.desc-modal-body p {
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-weight: 500;
+}
+
+.desc-modal-box {
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+}
+.desc-modal-box strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.66rem;
+    letter-spacing: 0.5px;
+}
+
+.formula-box {
+    background: rgba(52,152,219,0.05);
+    border-left: 4px solid #3498db;
+    color: var(--text);
+}
+.tip-box {
+    background: rgba(39,174,96,0.05);
+    border-left: 4px solid #27ae60;
+    color: var(--text);
+}
+
+body.dark-mode .formula-box {
+    background: rgba(52,152,219,0.08);
+}
+body.dark-mode .tip-box {
+    background: rgba(39,174,96,0.08);
+}
+

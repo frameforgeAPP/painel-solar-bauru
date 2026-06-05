@@ -18,7 +18,7 @@ const db = firebase.firestore();
 // Ele permite apenas consultar dados de geração (watts, temperatura, kWh).
 // Não dá acesso a configurações, conta ou dados financeiros do portal SolaX.
 // O token de admin (Firebase) é mantido em GitHub Secrets e nunca aparece no código.
-const SOLAX_TOKEN = '202605120608478230237210';
+const SOLAX_TOKEN = '202606060627118733410215';
 const DEVICES = [
     { sn: 'C02711021F3193', name: 'Micro Inv. 1 (Micro-4in1)' },
     { sn: 'C02711021F312R', name: 'Micro Inv. 2 (Micro-4in1)' }
@@ -293,56 +293,60 @@ async function syncSolaxOnly() {
         return;
     }
 
-    // Lista expandida de proxies para maior chance de sucesso
-    const proxies = [
-        'https://api.allorigins.win/get?url=',
-        'https://corsproxy.io/?',
-        'https://thingproxy.freeboard.io/fetch/',
-        'https://api.codetabs.com/v1/proxy?quest='
-    ];
+    // Substitua a string abaixo pela URL que o Google Apps Script vai te gerar!
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw0AbznBxdF9Qc0mZg4699STPlJCQClPMygotw1MeAjaF_bsnc0wFEH-7saupXQ3HDQoQ/exec';
 
-    // Função que tenta conectar a UM inversor percorrendo os proxies
+    // Função que tenta conectar a UM inversor usando o seu Google Apps Script exclusivo
     async function fetchInverter(i) {
         const dev = DEVICES[i];
-        const apiUrl = `https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${SOLAX_TOKEN}&sn=${dev.sn}&t=${Date.now()}`;
-
-        for (const proxy of proxies) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000);
-                const response = await fetch(`${proxy}${encodeURIComponent(apiUrl)}`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) continue;
-                const data = await response.json();
-                const res = data.contents ? JSON.parse(data.contents) : data;
-
-                if (res && res.success) {
-                    const r = res.result;
-                    const watts       = Number(r.acpower      || r.acPower      || 0);
-                    const yDay        = Number(r.yieldtoday   || r.yieldToday   || 0);
-                    const yLifetime   = Number(r.yieldtotal   || r.yieldTotal   || 0);
-
-                    state.invDetails[i].watts       = watts;
-                    state.invDetails[i].yield       = Math.max(state.invDetails[i].yield || 0, yDay);
-                    state.invDetails[i].lifetimeKwh = yLifetime;
-                    state.invDetails[i].temp        = r.temperature || r.temperBoard || r.inverterTemp || '--';
-                    state.invDetails[i].status      = getStatusText(r.inverterStatus, watts);
-                    state.invDetails[i].dcPower     = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4]
-                        .filter(v => v !== null && v !== undefined);
-                    // Cache individual por inversor para resiliência a falhas parciais
-                    if (yLifetime > 0) localStorage.setItem(`solax_inv_lifetime_${i}`, yLifetime);
-                    console.log(`[Solax] Inv ${i+1} OK via ${proxy} — ${watts}W / hoje:${yDay}kWh / total:${yLifetime}kWh`);
-                    return { watts, yDay, yLifetime };
-                }
-            } catch (e) {
-                console.warn(`[Solax] Inv ${i+1} falhou no proxy ${proxy}:`, e.message);
-            }
+        
+        if (GAS_URL === 'COLE_A_URL_DO_GAS_AQUI') {
+            state.invDetails[i].status = 'Configurar GAS';
+            console.warn(`[Solax] Configure a URL do Google Apps Script na variável GAS_URL no script.js`);
+            return null;
         }
-        // Todos os proxies falharam
-        state.invDetails[i].status = 'Erro Sinc.';
-        console.warn(`[Solax] Inv ${i+1} — todos os proxies falharam.`);
-        return null;
+
+        const apiUrl = `${GAS_URL}?tokenId=${SOLAX_TOKEN}&sn=${dev.sn}`;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+            const response = await fetch(apiUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error("Erro HTTP: " + response.status);
+            
+            const data = await response.json();
+            
+            if (data && data.success) {
+                const r = data.result;
+                const watts       = Number(r.acpower      || r.acPower      || 0);
+                const yDay        = Number(r.yieldtoday   || r.yieldToday   || 0);
+                const yLifetime   = Number(r.yieldtotal   || r.yieldTotal   || 0);
+
+                state.invDetails[i].watts       = watts;
+                state.invDetails[i].yield       = Math.max(state.invDetails[i].yield || 0, yDay);
+                state.invDetails[i].lifetimeKwh = yLifetime;
+                state.invDetails[i].temp        = r.temperature || r.temperBoard || r.inverterTemp || '--';
+                state.invDetails[i].status      = getStatusText(r.inverterStatus, watts);
+                state.invDetails[i].dcPower     = [r.powerdc1, r.powerdc2, r.powerdc3, r.powerdc4]
+                    .filter(v => v !== null && v !== undefined);
+                
+                if (yLifetime > 0) localStorage.setItem(`solax_inv_lifetime_${i}`, yLifetime);
+                console.log(`[Solax] Inv ${i+1} OK via GAS — ${watts}W / hoje:${yDay}kWh / total:${yLifetime}kWh`);
+                return { watts, yDay, yLifetime };
+            } else {
+                throw new Error("SolaX Cloud retornou success=false. Erro: " + data.exception);
+            }
+        } catch (e) {
+            console.warn(`[Solax] Inv ${i+1} falhou via GAS:`, e.message);
+            if (e.message.toLowerCase().includes('token invalid')) {
+                state.invDetails[i].status = 'Token Expirado!';
+            } else {
+                state.invDetails[i].status = 'Erro Sinc.';
+            }
+            return null;
+        }
     }
 
     // Dispara os dois inversores em PARALELO
@@ -406,7 +410,8 @@ async function syncSolaxOnly() {
         statusBadge.innerText = totalWatts > 0 ? 'Gerando Agora' : 'Conectado';
         statusBadge.className = 'badge online';
     } else {
-        statusBadge.innerText = 'Sem Dados SolaX';
+        const hasTokenError = state.invDetails.some(inv => inv.status === 'Token Expirado!');
+        statusBadge.innerText = hasTokenError ? '⚠️ Token Expirado!' : 'Sem Dados SolaX';
         statusBadge.className = 'badge offline';
     }
 }
@@ -530,8 +535,9 @@ function listenToCloudData() {
                     break;
                 }
             }
-            if (dbLifetimeKwh > 0 && (!state.lifetimeKwh || state.lifetimeKwh === 0)) {
-                state.lifetimeKwh = dbLifetimeKwh;
+            if (dbLifetimeKwh > 0) {
+                state.lifetimeKwh = Math.max(state.lifetimeKwh || 0, dbLifetimeKwh);
+                localStorage.setItem('solax_lifetime_kwh', state.lifetimeKwh);
             }
 
             // Forçamos a carga inicial com o último valor gravado no banco
