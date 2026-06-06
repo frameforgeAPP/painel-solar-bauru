@@ -264,6 +264,11 @@
                             <input type="number" id="cfg-maxpower" step="100" placeholder="4960">
                             <small class="hint">8 painéis × 620W</small>
                         </div>
+                        <div class="input-group">
+                            <label>Custo do Sistema (R$)</label>
+                            <input type="number" id="cfg-investment" step="500" placeholder="20000">
+                            <small class="hint">Para calcular Payback</small>
+                        </div>
                     </div>
                     <button class="btn-primary" onclick="saveSettings()">
                         <i class="fas fa-save"></i> Salvar Configurações
@@ -425,6 +430,21 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; border-top:1px dashed var(--bg); padding-top:8px; margin-top:2px; padding: 4px 6px; border-radius: 6px;">
                         <span><i class="fas fa-info-circle" style="color: var(--text-light); opacity: 0.6; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" onclick="event.stopPropagation(); showItemDescription('economia-semsolar')"></i><span style="color:var(--text-light);"><i class="fas fa-bolt" style="color:#e74c3c; margin-right:4px;"></i> Se não tivesse Energia Solar</span></span>
                         <span id="val-nosolar-month" style="font-weight:bold; color:#e74c3c;" class="skeleton">R$ 0,00</span>
+                    </div>
+
+                    <!-- Progresso de Payback -->
+                    <div style="margin-top: 10px; border-top: 1px dashed var(--bg); padding-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 0.72rem; font-weight: bold; color: var(--text-light); text-transform: uppercase;"><i class="fas fa-chart-pie" style="color:#f39c12; margin-right:4px;"></i> Retorno do Investimento (Payback)</span>
+                            <span id="payback-percent" style="font-size: 0.75rem; font-weight: bold; color: #f39c12;">--% Pago</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+                            <div id="payback-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #f39c12, #e67e22); border-radius: 4px; transition: width 1s ease-in-out;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-light); margin-top: 4px;">
+                            <span id="payback-saved">R$ 0,00</span>
+                            <span id="payback-cost">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
             </div>

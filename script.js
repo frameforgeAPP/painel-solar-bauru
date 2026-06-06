@@ -31,6 +31,7 @@ const CIP = 9.07;
 const MIN_KWH = 50;          // Consumo mínimo faturável pela CPFL (50 kWh/mês)
 // Capacidade instalada: 8 paineis x 620W = 4.960W de pico
 let MAX_POWER_W = parseInt(localStorage.getItem('maxPower')) || 4960;
+let INVESTMENT = parseFloat(localStorage.getItem('investment')) || 20000;
 
 
 let state = {
@@ -221,8 +222,10 @@ window.onload = () => {
     // Popula campos de configurações com valores salvos
     const cfgTariff = document.getElementById('cfg-tariff');
     const cfgMax = document.getElementById('cfg-maxpower');
+    const cfgInv = document.getElementById('cfg-investment');
     if (cfgTariff) cfgTariff.value = TARIFF;
     if (cfgMax) cfgMax.value = MAX_POWER_W;
+    if (cfgInv) cfgInv.value = INVESTMENT;
 
     // Atualiza dashboard ao digitar (sem salvar) para ver impacto no gráfico
     document.getElementById('import').addEventListener('input', updateDashboardUI);
@@ -936,6 +939,21 @@ function renderChart() {
     if (expEl) expEl.innerHTML = formatTotal(lifetimeExp);
     if (impEl) impEl.innerHTML = formatTotal(lifetimeImp);
 
+    // ── Payback ─────────────────────────────────────────────
+    const totalSavingsLifetime = lifetimeGer * TARIFF;
+    const paybackPercent = Math.min(100, (totalSavingsLifetime / INVESTMENT) * 100);
+    const paybackBar = document.getElementById('payback-bar');
+    const paybackPercentEl = document.getElementById('payback-percent');
+    const paybackSavedEl = document.getElementById('payback-saved');
+    const paybackCostEl = document.getElementById('payback-cost');
+    
+    if (paybackBar && paybackPercentEl) {
+        paybackBar.style.width = `${paybackPercent}%`;
+        paybackPercentEl.innerText = `${paybackPercent.toFixed(1)}% Pago`;
+        paybackSavedEl.innerText = `R$ ${totalSavingsLifetime.toFixed(2).replace('.', ',')}`;
+        paybackCostEl.innerText = `R$ ${INVESTMENT.toFixed(2).replace('.', ',')}`;
+    }
+
     if (energyChart) energyChart.destroy();
     if (energyChartLine) energyChartLine.destroy();
     
@@ -1406,6 +1424,7 @@ function toggleSettings() {
 function saveSettings() {
     const tariffVal = parseFloat(document.getElementById('cfg-tariff').value);
     const maxPowerVal = parseInt(document.getElementById('cfg-maxpower').value);
+    const invVal = parseFloat(document.getElementById('cfg-investment').value);
 
     if (tariffVal && tariffVal > 0) {
         TARIFF = tariffVal;
@@ -1414,6 +1433,10 @@ function saveSettings() {
     if (maxPowerVal && maxPowerVal > 0) {
         MAX_POWER_W = maxPowerVal;
         localStorage.setItem('maxPower', maxPowerVal);
+    }
+    if (invVal && invVal > 0) {
+        INVESTMENT = invVal;
+        localStorage.setItem('investment', invVal);
     }
 
     toggleSettings();
