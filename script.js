@@ -176,7 +176,11 @@ function updateSmartAdvisor() {
         }
     }
     
-    advEl.textContent = message;
+    if (window.advisorForecastHTML) {
+        advEl.innerHTML = window.advisorForecastHTML;
+    } else {
+        advEl.textContent = message;
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1673,10 +1677,8 @@ async function fetchWeather() {
                 }
                 const timeStr = `${peakHour.toString().padStart(2, '0')}h00`;
 
-                const advisorText = document.getElementById('advisor-text');
-                if (advisorText) {
-                    advisorText.innerHTML = `☀️ Previsão Inteligente: Amanhã seu sistema vai gerar cerca de <strong style="color:var(--text);">${estimatedGen.toFixed(1)} kWh</strong>.<br><span style="font-size:0.65rem; color:var(--text-light);">O pico de geração será por volta das ${timeStr}.</span>`;
-                }
+                window.advisorForecastHTML = `☀️ Previsão Inteligente: Amanhã seu sistema vai gerar cerca de <strong style="color:var(--text);">${estimatedGen.toFixed(1)} kWh</strong>.<br><span style="font-size:0.65rem; color:var(--text-light);">O pico de geração será por volta das ${timeStr}.</span>`;
+                
                 const tvAdvisorText = document.getElementById('tv-advisor-text');
                 if (tvAdvisorText) {
                     tvAdvisorText.innerHTML = `☀️ PREVISÃO PARA AMANHÃ:<br><strong style="font-size: 2.2rem; color: #ff9800;">${estimatedGen.toFixed(1)} kWh</strong><br><span style="font-size: 1.2rem;">Pico às ${timeStr}</span>`;
