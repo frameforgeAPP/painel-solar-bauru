@@ -1585,12 +1585,12 @@ function calcBillEstimate() {
 async function fetchWeather() {
     let data;
     try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo');
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min,shortwave_radiation_sum&hourly=shortwave_radiation&timezone=America%2FSao_Paulo');
         data = await res.json();
     } catch(e) {
         console.warn("Direct weather fetch failed, attempting proxy fallback for older device compatibility...", e);
         try {
-            const targetUrl = 'https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo';
+            const targetUrl = 'https://api.open-meteo.com/v1/forecast?latitude=-22.3145&longitude=-49.0605&daily=weathercode,temperature_2m_max,temperature_2m_min,shortwave_radiation_sum&hourly=shortwave_radiation&timezone=America%2FSao_Paulo';
             const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
             const proxyData = await proxyRes.json();
             data = JSON.parse(proxyData.contents);
@@ -1639,19 +1639,49 @@ async function fetchWeather() {
             const code = data.daily.weathercode[i];
             const weather = weatherCodes[code] || { icon: "fa-cloud", color: "#95a5a6" };
             
-            // Estimativa de geração solar com base no clima
-            let weatherFactor = 0.5;
-            if (code === 0 || code === 1) weatherFactor = 1.0;
-            else if (code === 2) weatherFactor = 0.88;
-            else if (code === 3) weatherFactor = 0.55;
-            else if (code >= 45 && code <= 48) weatherFactor = 0.45;
-            else if (code >= 51 && code <= 55) weatherFactor = 0.35;
-            else if (code >= 61 && code <= 65) weatherFactor = 0.22;
-            else if (code >= 80 && code <= 82) weatherFactor = 0.28;
-            else if (code >= 95) weatherFactor = 0.15;
-            
-            const tempFactor = 1 - (maxT - 25) * 0.0035;
-            const estimatedGen = Math.max(0, 4.96 * 4.35 * weatherFactor * tempFactor);
+            // Estimativa de geração solar com base na radiação (MJ/m²) ou clima
+            const radMj = data.daily.shortwave_radiation_sum ? data.daily.shortwave_radiation_sum[i] : null;
+            let estimatedGen = 0;
+            if (radMj) {
+                estimatedGen = radMj * (MAX_POWER_W / 4960) * 1.15; // Fator empírico ajustado
+            } else {
+                let weatherFactor = 0.5;
+                if (code === 0 || code === 1) weatherFactor = 1.0;
+                else if (code === 2) weatherFactor = 0.88;
+                else if (code === 3) weatherFactor = 0.55;
+                else if (code >= 45 && code <= 48) weatherFactor = 0.45;
+                else if (code >= 51 && code <= 55) weatherFactor = 0.35;
+                else if (code >= 61 && code <= 65) weatherFactor = 0.22;
+                else if (code >= 80 && code <= 82) weatherFactor = 0.28;
+                else if (code >= 95) weatherFactor = 0.15;
+
+                const tempFactor = 1 - (maxT - 25) * 0.0035;
+                estimatedGen = Math.max(0, 4.96 * 4.35 * weatherFactor * tempFactor);
+            }
+
+            // Descobrir o pico de geração (horário) para amanhã (i=1)
+            if (i === 1 && data.hourly && data.hourly.shortwave_radiation) {
+                // Amanhã corresponde às horas 24 a 47 no array
+                let maxHourlyRad = 0;
+                let peakHour = 12;
+                for (let h = 24; h < 48; h++) {
+                    const rad = data.hourly.shortwave_radiation[h] || 0;
+                    if (rad > maxHourlyRad) {
+                        maxHourlyRad = rad;
+                        peakHour = h - 24;
+                    }
+                }
+                const timeStr = `${peakHour.toString().padStart(2, '0')}h00`;
+
+                const advisorText = document.getElementById('advisor-text');
+                if (advisorText) {
+                    advisorText.innerHTML = `☀️ Previsão Inteligente: Amanhã seu sistema vai gerar cerca de <strong style="color:var(--text);">${estimatedGen.toFixed(1)} kWh</strong>.<br><span style="font-size:0.65rem; color:var(--text-light);">O pico de geração será por volta das ${timeStr}.</span>`;
+                }
+                const tvAdvisorText = document.getElementById('tv-advisor-text');
+                if (tvAdvisorText) {
+                    tvAdvisorText.innerHTML = `☀️ PREVISÃO PARA AMANHÃ:<br><strong style="font-size: 2.2rem; color: #ff9800;">${estimatedGen.toFixed(1)} kWh</strong><br><span style="font-size: 1.2rem;">Pico às ${timeStr}</span>`;
+                }
+            }
             
             html += `
                 <div style="flex: 1; min-width: 52px; text-align: center; background: var(--bg); padding: 5px 2px; border-radius: 6px; line-height: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 95px;">
