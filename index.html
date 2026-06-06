@@ -266,7 +266,7 @@
                         </div>
                         <div class="input-group">
                             <label>Custo do Sistema (R$)</label>
-                            <input type="number" id="cfg-investment" step="500" placeholder="20000">
+                            <input type="number" id="cfg-investment" step="500" placeholder="12300">
                             <small class="hint">Para calcular Payback</small>
                         </div>
                     </div>
@@ -334,33 +334,39 @@
 
             <!-- HISTÓRICO RECENTE -->
             <div class="card card-history">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleHistory()">
                     <h3 style="margin:0 !important;"><i class="fas fa-history"></i> Histórico Recente</h3>
-                    <div class="chart-tabs">
-                        <button id="hist-tab-table-btn" class="tab-btn active" onclick="switchHistoryTab('table')"><i class="fas fa-table"></i> Tabela</button>
-                        <button id="hist-tab-chart-btn" class="tab-btn" onclick="switchHistoryTab('chart')"><i class="fas fa-chart-line"></i> Gráfico</button>
-                    </div>
+                    <i id="hist-toggle-icon" class="fas fa-chevron-down" style="color: var(--text-light); transition: transform 0.3s ease;"></i>
                 </div>
                 
-                <div id="history-table-container" class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Hora</th>
-                                <th>Imp</th>
-                                <th>Exp</th>
-                                <th>Saldo</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-body"></tbody>
-                    </table>
-                </div>
+                <div id="history-content" style="display: none; margin-top: 12px; border-top: 1px solid var(--bg); padding-top: 12px;">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                        <div class="chart-tabs">
+                            <button id="hist-tab-table-btn" class="tab-btn active" onclick="switchHistoryTab('table')"><i class="fas fa-table"></i> Tabela</button>
+                            <button id="hist-tab-chart-btn" class="tab-btn" onclick="switchHistoryTab('chart')"><i class="fas fa-chart-line"></i> Gráfico</button>
+                        </div>
+                    </div>
 
-                <div class="chart-scroll-wrapper">
-                    <div class="chart-scroll-area" id="history-chart-scroll-area" style="display: none;">
-                        <div id="history-chart-container" style="position: relative; height: 180px; width: 100%;">
-                            <canvas id="historyEvolutionChart"></canvas>
+                    <div id="history-table-container" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Hora</th>
+                                    <th>Imp</th>
+                                    <th>Exp</th>
+                                    <th>Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="chart-scroll-wrapper">
+                        <div class="chart-scroll-area" id="history-chart-scroll-area" style="display: none;">
+                            <div id="history-chart-container" style="position: relative; height: 180px; width: 100%;">
+                                <canvas id="historyEvolutionChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -455,7 +461,7 @@
                         <i class="fas fa-lightbulb" style="color: #f39c12; font-size: 1rem;"></i>
                     </div>
                     <div style="flex: 1;">
-                        <h4 style="margin: 0 0 3px 0; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text);">Smart Advisor</h4>
+                        <h4 style="margin: 0 0 3px 0; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text);">Assistente Inteligente</h4>
                         <p id="advisor-text" style="margin: 0; font-size: 0.7rem; color: var(--text-light); line-height: 1.4;">Analisando dados climáticos e de saldo do ciclo para gerar sugestões...</p>
                     </div>
                 </div>
@@ -544,10 +550,10 @@
             <!-- Slide 4: Smart Advisor (Tela Única) -->
             <div class="tv-slide" id="tv-slide-4">
                 <div class="tv-slide-header">
-                    <span><i class="fas fa-brain"></i> SUGESTÃO SMART ADVISOR</span>
+                    <span><i class="fas fa-brain"></i> ASSISTENTE INTELIGENTE</span>
                 </div>
                 <div class="tv-hero-full advisor-hero-full">
-                    <span class="tv-hero-label-full" style="color: #ff9800;"><i class="fas fa-brain"></i> SMART ADVISOR</span>
+                    <span class="tv-hero-label-full" style="color: #ff9800;"><i class="fas fa-brain"></i> ASSISTENTE INTELIGENTE</span>
                     <div class="tv-advisor-inner-full">
                         <p id="tv-advisor-text">Analisando dados climáticos...</p>
                     </div>

@@ -31,7 +31,7 @@ const CIP = 9.07;
 const MIN_KWH = 50;          // Consumo mínimo faturável pela CPFL (50 kWh/mês)
 // Capacidade instalada: 8 paineis x 620W = 4.960W de pico
 let MAX_POWER_W = parseInt(localStorage.getItem('maxPower')) || 4960;
-let INVESTMENT = parseFloat(localStorage.getItem('investment')) || 20000;
+let INVESTMENT = parseFloat(localStorage.getItem('investment')) || 12300;
 
 
 let state = {
@@ -1417,6 +1417,20 @@ function toggleSettings() {
         icon.className = body && body.classList.contains('open')
             ? 'fas fa-chevron-up'
             : 'fas fa-chevron-down';
+    }
+}
+
+function toggleHistory() {
+    const content = document.getElementById('history-content');
+    const icon = document.getElementById('hist-toggle-icon');
+    if (content && icon) {
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        }
     }
 }
 
