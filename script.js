@@ -301,7 +301,7 @@ async function syncSolaxOnly() {
     }
 
     // Substitua a string abaixo pela URL que o Google Apps Script vai te gerar!
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw0AbznBxdF9Qc0mZg4699STPlJCQClPMygotw1MeAjaF_bsnc0wFEH-7saupXQ3HDQoQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzr09PWn413FiCkt-xJ1aUjf8vJAo8v__kquhC54WF9HkyBUntCPRgAxtzjgbokaV83Rg/exec';
 
     // Função que tenta conectar a UM inversor usando o seu Google Apps Script exclusivo
     async function fetchInverter(i) {

@@ -1,5 +1,5 @@
 // Item 3 & 9: Cache offline + versionamento automático
-const CACHE_NAME = 'solar-monitor-v38';
+const CACHE_NAME = 'solar-monitor-v39';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -47,7 +47,14 @@ self.addEventListener('fetch', (e) => {
     } else {
         // Estratégia Network-First para APIs externas (Firebase, Solax, Clima)
         e.respondWith(
-            fetch(e.request).catch(() => caches.match(e.request))
+            fetch(e.request).catch(async () => {
+                const cachedResponse = await caches.match(e.request);
+                if (cachedResponse) return cachedResponse;
+                return new Response(JSON.stringify({ error: "Offline ou falha na rede" }), {
+                    status: 503,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            })
         );
     }
 });
