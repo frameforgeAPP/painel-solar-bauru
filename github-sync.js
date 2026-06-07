@@ -184,6 +184,14 @@ async function runSync() {
             console.log(`[Solax] Geração Total Acumulada: ${totalLifetime} kWh (bruto) - ${LIFETIME_OFFSET} kWh (offset) = ${lifetimeKwh} kWh`);
         }
 
+        const newPowerPoint = {
+            time: timeStr.slice(0, 5), // formato HH:MM
+            watts: totalWatts,
+            inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
+            inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
+            timestamp: Date.now()
+        };
+
         if (todayAlreadyExists) {
             // 6a. Documento do dia já existe → atualiza APENAS os campos solares
             //     import/export NÃO são tocados (preserva sync manual do usuário)
@@ -194,7 +202,8 @@ async function runSync() {
                 watts: totalWatts,
                 inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
                 inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
-                inverters: inverterDetails
+                inverters: inverterDetails,
+                powerCurve: admin.firestore.FieldValue.arrayUnion(newPowerPoint)
             });
             console.log(`[Atualizado] Doc ${todayISO} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | lifetimeKwh: ${lifetimeKwh}kWh`);
         } else {
@@ -209,7 +218,8 @@ async function runSync() {
                 watts: totalWatts,
                 inverterWatts: inverterDetails.map(inv => Number(inv.watts) || 0),
                 inverterTemps: inverterDetails.map(inv => Number(inv.temp) || 0),
-                inverters: inverterDetails
+                inverters: inverterDetails,
+                powerCurve: [newPowerPoint]
             });
             console.log(`[Criado] Doc ${todayISO} | watts: ${totalWatts}W | prod: ${prodToSave}kWh | import herdado: ${lastImport} | export herdado: ${lastExport}`);
         }

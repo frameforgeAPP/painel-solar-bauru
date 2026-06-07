@@ -535,6 +535,31 @@ function listenToCloudData() {
             const todayStr = new Date().toLocaleDateString('pt-BR');
             if (latest.date === todayStr) {
                 state.productionToday = Math.max(state.productionToday || 0, Number(latest.production) || 0);
+
+                // Sincronizar powerCurve da nuvem com o localStorage
+                if (latest.powerCurve && Array.isArray(latest.powerCurve)) {
+                    let powerHistory = JSON.parse(localStorage.getItem('power_instant_history'));
+                    if (!powerHistory || powerHistory.date !== todayStr) {
+                        powerHistory = { date: todayStr, data: [] };
+                    }
+                    
+                    let addedNew = false;
+                    latest.powerCurve.forEach(cloudPt => {
+                        const exists = powerHistory.data.find(localPt => localPt.time === cloudPt.time);
+                        if (!exists) {
+                            powerHistory.data.push(cloudPt);
+                            addedNew = true;
+                        }
+                    });
+                    
+                    if (addedNew) {
+                        powerHistory.data.sort((a, b) => a.timestamp - b.timestamp);
+                        localStorage.setItem('power_instant_history', JSON.stringify(powerHistory));
+                        // Atualiza as instâncias dos gráficos se já estiverem desenhadas
+                        if (inverterPowerChartInstance) renderInverterPowerChart();
+                        if (document.getElementById('powerInstantChart') && Chart.getChart('powerInstantChart')) renderPowerInstantChart();
+                    }
+                }
             }
 
             // Tenta resgatar o último lifetimeKwh válido da história como um fallback de alta precisão
