@@ -336,6 +336,17 @@ tbody tr[onclick]:hover {
     padding: 3px;
     border-radius: 6px;
 }
+.month-selector {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 3px 6px;
+    font-size: 0.75rem;
+    color: var(--primary);
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    font-weight: bold;
+}
 .tab-btn {
     background: transparent;
     border: none;
@@ -421,6 +432,7 @@ body.dark-mode .tab-btn.active { background: #444; color: var(--primary); }
 body.dark-mode .inverter-item { background: #2a2a2a; }
 
 body.dark-mode .chart-tabs { background: #2a2a2a; }
+body.dark-mode .month-selector { background: #444; border-color: #555; color: var(--primary); }
 body.dark-mode .power-gauge-container { background: #2a2a2a; }
 body.dark-mode .power-gauge-bar { background: #444; }
 body.dark-mode .btn-settings-toggle { background: #2a2a2a; border-color: #444; }

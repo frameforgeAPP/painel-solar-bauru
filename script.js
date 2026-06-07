@@ -524,6 +524,7 @@ function listenToCloudData() {
 
         state.groupedHistory = grouped;
         renderHistory();
+        populateMonthSelector();
 
         // Auto-popula campos de import/export se estiverem vazios ou na carga inicial com a última leitura do banco
         if (state.history.length > 0) {
@@ -861,8 +862,19 @@ function renderChart() {
     const todayStr = new Date().toLocaleDateString('pt-BR');
 
     if (state.history.length > 0) {
-        // Exibe os últimos 15 dias para rolagem lateral confortável
-        let lastDays = [...state.history].slice(0, 15).reverse();
+        const selector = document.getElementById('chart-month-selector');
+        let selectedMonth = selector ? selector.value : null;
+        
+        let lastDays = [];
+        if (selectedMonth) {
+            lastDays = state.history.filter(h => {
+                const parts = h.date.split('/');
+                return parts.length === 3 && `${parts[1]}/${parts[2]}` === selectedMonth;
+            }).reverse();
+        } else {
+            // Fallback se não tiver seletor
+            lastDays = [...state.history].slice(0, 15).reverse();
+        }
         
         const lastRecord = state.history[0];
         labels = lastDays.map(h => h.date.split('/')[0]);
@@ -1091,6 +1103,54 @@ function renderChart() {
                 scales: { y: { beginAtZero: true }, x: { ticks: { font: { size: 9 } } } }
             }
         });
+    }
+
+    // Auto-scroll para a direita após desenhar
+    setTimeout(() => {
+        const canvasEl = document.getElementById('energyChart');
+        if (canvasEl) {
+            const wrapper = canvasEl.closest('.chart-scroll-wrapper');
+            if (wrapper) wrapper.scrollLeft = wrapper.scrollWidth;
+        }
+    }, 50);
+}
+
+function populateMonthSelector() {
+    const selector = document.getElementById('chart-month-selector');
+    if (!selector) return;
+    
+    const months = new Set();
+    state.history.forEach(h => {
+        const parts = h.date.split('/');
+        if (parts.length === 3) {
+            months.add(`${parts[1]}/${parts[2]}`);
+        }
+    });
+    
+    const sortedMonths = Array.from(months).sort((a, b) => {
+        const [mA, yA] = a.split('/');
+        const [mB, yB] = b.split('/');
+        if (yA !== yB) return Number(yB) - Number(yA);
+        return Number(mB) - Number(mA);
+    });
+    
+    const currentSelection = selector.value;
+    
+    selector.innerHTML = '';
+    sortedMonths.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        // Opcional: Formatar para nome do mês (ex: 05/2026 -> Mai/2026)
+        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const [mm, yy] = m.split('/');
+        option.textContent = `${monthNames[parseInt(mm) - 1]}/${yy}`;
+        selector.appendChild(option);
+    });
+    
+    if (currentSelection && sortedMonths.includes(currentSelection)) {
+        selector.value = currentSelection;
+    } else if (sortedMonths.length > 0) {
+        selector.value = sortedMonths[0]; // Seleciona o mais recente
     }
 }
 

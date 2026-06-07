@@ -196,7 +196,8 @@
             <div class="card card-charts">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin-bottom: 0;"><i class="fas fa-chart-area"></i> Geração vs Consumo</h3>
-                    <div class="chart-tabs">
+                    <div class="chart-tabs" style="align-items: center;">
+                        <select id="chart-month-selector" class="month-selector" onchange="renderChart()" style="margin-right: 5px;"></select>
                         <button id="tab-bar-btn" class="tab-btn active" onclick="switchChartTab('bar')"><i class="fas fa-chart-bar"></i> Barras</button>
                         <button id="tab-line-btn" class="tab-btn" onclick="switchChartTab('line')"><i class="fas fa-chart-line"></i> Linhas</button>
                     </div>
